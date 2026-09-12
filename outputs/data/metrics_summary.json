@@ -1,13 +1,13 @@
 {
-  "n_forecasts": 73431,
-  "baseline_mae_min": 37.55,
-  "railcast_mae_min": 13.55,
-  "mae_improvement_pct": 63.9,
-  "baseline_p90_min": 113.08,
-  "railcast_p90_min": 33.25,
-  "coverage_pct": 78.76,
+  "n_forecasts": 73268,
+  "baseline_mae_min": 26.95,
+  "railcast_mae_min": 10.87,
+  "mae_improvement_pct": 59.7,
+  "baseline_p90_min": 77.0,
+  "railcast_p90_min": 29.41,
+  "coverage_pct": 78.36,
   "nominal_coverage_pct": 80.0,
-  "mean_window_min": 37.5,
+  "mean_window_min": 28.3,
   "data_source": {
     "name": "real",
     "static_feed": {
@@ -47,15 +47,15 @@
     ],
     "delay_parameters": {
       "fitted": true,
-      "fitted_against": "stated punctuality target",
+      "fitted_against": "observed arrivals (260) - below 2000, treat as provisional",
       "residual": {
-        "RAJDHANI": -0.1944,
-        "DURONTO": 0.1272,
-        "SUPERFAST": -0.1721,
-        "EXPRESS": 0.075,
-        "delay_median_min": 9.1,
-        "delay_p90_min": 134.0,
-        "delay_p99_min": 374.4
+        "p25_gap_min": -6.6,
+        "p50_gap_min": -7.9,
+        "p75_gap_min": 10.2,
+        "p90_gap_min": 26.3,
+        "p95_gap_min": 68.6,
+        "within_15_gap": 0.111,
+        "n_observed": 260
       },
       "note": "These govern how delay is generated. They are the part of the simulator that is not measured from published data."
     }
@@ -76,48 +76,48 @@
     239
   ],
   "baseline_definition": "baseline_arr",
-  "rows_train": 342891,
-  "rows_calib": 74825,
-  "rows_test": 73431,
+  "rows_train": 342301,
+  "rows_calib": 74732,
+  "rows_test": 73268,
   "free_run_model": {
-    "n": 1116071,
-    "mae_min": 0.579661815531803,
-    "theoretical_mae_min": 0.8019528926243555
+    "n": 1100836,
+    "mae_min": 0.6091077965376345,
+    "theoretical_mae_min": 0.8219046161072538
   },
-  "rules_only_mae_min": 13.46,
+  "rules_only_mae_min": 10.71,
   "precedence_experiment": {
-    "a": "12288",
-    "b": "19024",
+    "a": "12925",
+    "b": "12925-Slip",
     "runs": 24,
     "day": 232,
-    "cost_hold_b": 3792.46,
-    "cost_hold_a": 3789.51,
-    "se_hold_b": 54.28,
-    "se_hold_a": 53.14,
-    "delta": -2.95,
+    "cost_hold_b": 3277.99,
+    "cost_hold_a": 4506.05,
+    "se_hold_b": 33.12,
+    "se_hold_a": 158.38,
+    "delta": 1228.06,
     "delta_by": {
-      "held": -2.4024743263976043,
-      "blocker": 5.942568932519673,
-      "others": -6.490705251956892,
-      "total": -2.950610645834805
+      "held": 262.8120127284865,
+      "blocker": 233.01487911893705,
+      "others": 732.2364252578978,
+      "total": 1228.0633171053214
     },
     "delta_se": {
-      "held": 1.7535830377052954,
-      "blocker": 3.4259925172995205,
-      "others": 16.191163034103493,
-      "total": 17.983457670063213
+      "held": 30.46223306734924,
+      "blocker": 31.900747959567436,
+      "others": 107.17490900206232,
+      "total": 155.92818898904002
     }
   },
-  "connection_reliability_ece": 0.0064,
+  "connection_reliability_ece": 0.0059,
   "serving": {
-    "ms_per_station_forecast": 1.691,
-    "full_corridor_reforecast_s": 1.166,
-    "station_forecasts_per_cycle": 689,
-    "projected_national_reforecast_s": 344.5
+    "ms_per_station_forecast": 0.458,
+    "full_corridor_reforecast_s": 0.315,
+    "station_forecasts_per_cycle": 688,
+    "projected_national_reforecast_s": 93.1
   },
   "punctuality_simulated": {
-    "median_delay_min": 22.0,
-    "p90_delay_min": 150.3,
-    "within_15_min_pct": 46.4
+    "median_delay_min": 7.5,
+    "p90_delay_min": 135.1,
+    "within_15_min_pct": 55.6
   }
 }
