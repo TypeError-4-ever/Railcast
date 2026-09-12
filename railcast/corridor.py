@@ -50,6 +50,25 @@ STATIONS_RAW = [
 ]
 
 
+# Zone codes are assigned stable integer ids the first time they are seen, so a
+# corridor built from real data can carry any of the 18 IR zones rather than the
+# four this prototype started with.
+ZONE_ID: dict[str, int] = {"NR": 0, "NCR": 1, "WCR": 2, "WR": 3}
+
+
+def zone_id(code: str) -> int:
+    if code not in ZONE_ID:
+        ZONE_ID[code] = len(ZONE_ID)
+    return ZONE_ID[code]
+
+
+def zone_name(idx: int) -> str:
+    for code, i in ZONE_ID.items():
+        if i == idx:
+            return code
+    return str(idx)
+
+
 def zone_of(km: float) -> str:
     """Railway zone the km post falls in (approximate divisional boundaries)."""
     if km < 60:
@@ -97,10 +116,11 @@ class Station:
     km: float
     is_junction: bool
     has_loop: bool
+    zone_code: str = ""          # real zone when the corridor came from a feed
 
     @property
     def zone(self) -> str:
-        return zone_of(self.km)
+        return self.zone_code or zone_of(self.km)
 
 
 @dataclass(frozen=True)
@@ -111,6 +131,8 @@ class Block:
     km_end: float
     from_station: int      # index of the station at/behind km_start
     to_station: int        # index of the next station ahead
+    speed_kmh: float | None = None   # sectional speed implied by the timetable
+    zone_code: str = ""
 
     @property
     def length(self) -> float:
@@ -122,11 +144,13 @@ class Block:
 
     @property
     def speed(self) -> float:
+        if self.speed_kmh is not None:
+            return self.speed_kmh
         return sanctioned_speed(self.mid_km) * gradient_factor(self.mid_km)
 
     @property
     def zone(self) -> str:
-        return zone_of(self.mid_km)
+        return self.zone_code or zone_of(self.mid_km)
 
 
 @dataclass
@@ -134,6 +158,11 @@ class Corridor:
     stations: list[Station]
     blocks: list[Block]
     blocks_between: dict[tuple[int, int], list[int]] = field(default_factory=dict)
+    # Acceleration and braking allowance per section. Zero when sectional speeds
+    # were derived from booked run times, because those already contain it -
+    # adding it again would invent an hour of delay over a 200-station route.
+    accel_stop: float = 1.4
+    accel_pass: float = 0.6
 
     @property
     def n_stations(self) -> int:
@@ -162,7 +191,7 @@ class Corridor:
             v = min(v, tsr.get(b, 1e9))
             total += blk.length / max(v, 15.0) * 60.0
         # acceleration / braking penalty at each end of the section
-        total += 1.4 if stopping else 0.6
+        total += self.accel_stop if stopping else self.accel_pass
         return total
 
 

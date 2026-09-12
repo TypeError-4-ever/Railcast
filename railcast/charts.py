@@ -18,7 +18,6 @@ import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Patch
 
-from .corridor import CORRIDOR
 from .models import HORIZON_LABELS
 
 OUT = Path("outputs/charts")
@@ -86,6 +85,17 @@ def _save(fig, name, theme):
     d.mkdir(parents=True, exist_ok=True)
     fig.savefig(d / f"{name}.png", dpi=200)
     plt.close(fig)
+
+
+def _tick_stations(cor, n: int = 10):
+    """Evenly spaced y-axis anchors, preferring junctions."""
+    step = max(1, len(cor.stations) // n)
+    out = []
+    for k in range(0, len(cor.stations), step):
+        window = range(k, min(k + step, len(cor.stations)))
+        junc = [i for i in window if cor.stations[i].is_junction]
+        out.append(junc[len(junc) // 2] if junc else k)
+    return sorted(set(out))
 
 
 def _hm(x):
@@ -289,7 +299,8 @@ def c06_journey(ctx, theme):
     r, day, now = _hero_rows(ctx)
     tid = r["train"].iloc[0]
     name = ctx["world"].sim.trains[tid].name
-    km = np.array([CORRIDOR.stations[j].km for j in r["to_idx"]])
+    cor = ctx["world"].cor
+    km = np.array([cor.stations[j].km for j in r["to_idx"]])
     base = r["sched_arr"].to_numpy()
     fig, ax = plt.subplots(figsize=(12, 5.8))
     ax.fill_between(km, r["lo_arr"] - base, r["hi_arr"] - base, color=ACCENT,
@@ -302,11 +313,11 @@ def c06_journey(ctx, theme):
     ax.axhline(0, color=t["mute"], lw=0.9, ls=":")
     for _, row in r.iterrows():
         if row["hops"] % 3 == 1:
-            ax.annotate(row["to_code"], (CORRIDOR.stations[row["to_idx"]].km,
+            ax.annotate(row["to_code"], (cor.stations[row["to_idx"]].km,
                                          row["act_arr"] - row["sched_arr"]),
                         textcoords="offset points", xytext=(0, 9), ha="center",
                         fontsize=8, color=t["mute"])
-    ax.set_xlabel("Kilometres from New Delhi")
+    ax.set_xlabel(f"Kilometres from {cor.code(0)}")
     ax.set_ylabel("Minutes late against the timetable")
     ax.grid(lw=0.6)
     ax.legend(frameon=False, ncol=4, loc="upper left", fontsize=10)
@@ -365,10 +376,11 @@ def c08_marey(ctx, theme):
     day, tid, stn, mins, blocker = ctx["cascade"]
     env, truth = ctx["world"].days[day]
     sim = ctx["world"].sim
+    cor = ctx["world"].cor
     fig, ax = plt.subplots(figsize=(12, 6.4))
     for otid, run in truth.items():
         tr = sim.trains[otid]
-        pts = [(run.arr[s], CORRIDOR.stations[s].km) for s in tr.path if s in run.arr]
+        pts = [(run.arr[s], cor.stations[s].km) for s in tr.path if s in run.arr]
         if len(pts) < 3:
             continue
         xs, ys = zip(*pts)
@@ -380,14 +392,15 @@ def c08_marey(ctx, theme):
             ax.annotate(f"{otid}", (xs[len(xs) // 2] / 60.0, ys[len(ys) // 2]),
                         textcoords="offset points", xytext=(6, 6), fontsize=9.5,
                         fontweight="bold", color=CLASS_COLOR[tr.klass])
-    hk = CORRIDOR.stations[stn].km
+    hk = cor.stations[stn].km
     ht = truth[tid].arr[stn] / 60.0
     ax.plot([ht], [hk], marker="o", ms=13, mfc="none", mec=BAD, mew=2.4, zorder=5)
-    ax.annotate(f"{tid} held {mins:.0f} min at {CORRIDOR.code(stn)}\nfor {blocker}",
+    ax.annotate(f"{tid} held {mins:.0f} min at {cor.code(stn)}\nfor {blocker}",
                 (ht, hk), textcoords="offset points", xytext=(14, -34), fontsize=10,
                 color=BAD, fontweight="bold")
-    ax.set_yticks([CORRIDOR.stations[i].km for i in range(0, 35, 4)])
-    ax.set_yticklabels([CORRIDOR.code(i) for i in range(0, 35, 4)], fontsize=9)
+    ticks = _tick_stations(cor)
+    ax.set_yticks([cor.stations[i].km for i in ticks])
+    ax.set_yticklabels([cor.code(i) for i in ticks], fontsize=9)
     ax.set_xlabel("Hours from midnight")
     ax.set_ylabel("Station along the corridor")
     ax.grid(lw=0.5, alpha=0.6)

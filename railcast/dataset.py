@@ -11,11 +11,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .corridor import CORRIDOR
+from .corridor import CORRIDOR, zone_id
 from .simulator import Simulator, make_environment
 from .trains import CLASSES, build_roster
 
-ZONE_ID = {"NR": 0, "NCR": 1, "WCR": 2, "WR": 3}
 KLASS_ID = {k: i for i, k in enumerate(CLASSES)}
 SNAPSHOTS_PER_DAY = 6
 
@@ -28,17 +27,34 @@ def calendar(day: int) -> tuple[int, int]:
 class World:
     """Simulates operating days and keeps the ground truth for each."""
 
-    def __init__(self, n_days: int, seed: int = 11):
+    def __init__(self, n_days: int, seed: int = 11, cor=None, trains=None,
+                 envs: dict | None = None, halts_only: bool = True,
+                 config=None):
+        from .simconfig import SimConfig
         self.rng = np.random.default_rng(seed)
-        self.cor = CORRIDOR
-        self.trains = build_roster()
-        self.sim = Simulator(self.cor, self.trains)
+        self.cor = cor if cor is not None else CORRIDOR
+        self.trains = trains if trains is not None else build_roster()
+        self.config = config or SimConfig.load()
+        self.sim = Simulator(self.cor, self.trains, self.config)
         self.n_days = n_days
+        self.envs = envs                 # real observed weather, when available
+        self.halts_only = halts_only     # forecast the stations passengers use
         self.days: dict[int, tuple] = {}
+
+    def calendar(self, day: int):
+        """(month, day of week). Real dates when the feed supplied them."""
+        env = self.envs.get(day) if self.envs else None
+        iso = getattr(env, "date", None)
+        if iso:
+            from datetime import date
+            d = date.fromisoformat(iso)
+            return d.month, d.weekday()
+        return calendar(day)
 
     def simulate(self) -> None:
         for d in range(self.n_days):
-            env = make_environment(d, self.rng, self.cor)
+            env = (self.envs.get(d) if self.envs
+                   else make_environment(d, self.rng, self.cor))
             truth = self.sim.run_day(env, self.rng)
             self.days[d] = (env, truth)
 
@@ -50,7 +66,7 @@ class World:
         for d in days:
             env, truth = self.days[d]
             fc = env.forecast()
-            month, _ = calendar(d)
+            month, _ = self.calendar(d)
             for tid, run in truth.items():
                 t = self.sim.trains[tid]
                 for a, b in zip(t.path[:-1], t.path[1:]):
@@ -66,7 +82,7 @@ class World:
                     rows.append((
                         theo, obs, conflict,
                         CLASSES[t.klass]["priority"], t.max_speed,
-                        ZONE_ID[blk.zone], int((run.dep[a] / 60) % 24),
+                        zone_id(blk.zone), int((run.dep[a] / 60) % 24),
                         self.cor.stations[hi].km - self.cor.stations[lo].km,
                         blk.speed, fc.factor(blk.zone, run.dep[a]),
                         int(b in t.halts), month,
@@ -126,7 +142,7 @@ class World:
     def snapshot_rows(self, day: int, now: float, fr_table: dict):
         env, truth = self.days[day]
         fc = env.forecast()
-        month, dow = calendar(day)
+        month, dow = self.calendar(day)
         rep = self.sim.forward_replay(fc, now, truth, fr_table=fr_table)
         pos = self._train_positions(truth, now)
         rows = []
@@ -144,9 +160,12 @@ class World:
             near = sum(1 for km, _ in others if abs(km - p["km"]) < 60)
             ahead_delay = float(np.mean(ahead)) if ahead else 0.0
             tsrp = self._tsr_prefix(t, env)
-            pad_cum = 0.0
-            for h, j in enumerate(path[k + 1:], start=1):
+            pad_cum, h = 0.0, 0
+            for j in path[k + 1:]:
                 pad_cum += t.pad.get(j, 0.0)
+                if self.halts_only and j not in t.halts:
+                    continue
+                h += 1
                 if j not in run.arr or j not in pred.arr:
                     continue
                 lead = t.sched_arr[j] - now
@@ -163,7 +182,7 @@ class World:
                     CLASSES[t.klass]["priority"], t.max_speed,
                     near, ahead_delay, tsrp.get(j, 0) - tsrp.get(i, 0),
                     fc.factor(self.cor.stations[j].zone, t.sched_arr[j]),
-                    ZONE_ID[self.cor.stations[j].zone], int((now / 60) % 24),
+                    zone_id(self.cor.stations[j].zone), int((now / 60) % 24),
                     t.sched_arr[j], pred.arr[j], run.arr[j],
                 ))
         return rows

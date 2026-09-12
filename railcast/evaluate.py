@@ -6,7 +6,7 @@ import pandas as pd
 
 from .models import HORIZON_LABELS, horizon_bucket, tod_bucket
 
-ZONE_NAME = {0: "NR", 1: "NCR", 2: "WCR", 3: "WR"}
+from .corridor import zone_name as _zone_name
 TOD_NAME = {0: "00-06", 1: "06-12", 2: "12-18", 3: "18-24"}
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -40,7 +40,7 @@ def score(df: pd.DataFrame) -> pd.DataFrame:
     out["covered"] = (out["act_arr"] >= out["lo_arr"]) & (out["act_arr"] <= out["hi_arr"])
     out["hbucket"] = horizon_bucket(out["sched_lead"].to_numpy())
     out["horizon"] = [HORIZON_LABELS[i] for i in out["hbucket"]]
-    out["zone_name"] = out["zone"].map(ZONE_NAME)
+    out["zone_name"] = [_zone_name(z) for z in out["zone"]]
     out["tod"] = [TOD_NAME[i] for i in tod_bucket(out["hour"].to_numpy())]
     out["month_name"] = [MONTHS[m - 1] for m in out["month"]]
     return out

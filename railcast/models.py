@@ -16,7 +16,8 @@ try:
 except ImportError:                                        # pragma: no cover
     lgb = None
 
-from .dataset import CATEGORICAL, FEATURES, ZONE_ID
+from .corridor import ZONE_ID
+from .dataset import CATEGORICAL, FEATURES
 from .trains import CLASSES
 
 ALPHA = 0.20                       # 80% nominal arrival window
