@@ -36,6 +36,12 @@ def main() -> None:
     k.add_argument("--target-file", help="JSON: class -> fraction within 15 min")
     k.add_argument("--start-date", default="2024-01-01")
 
+    v = sub.add_parser("validate", help="compare the simulator with collected data")
+    v.add_argument("--reference", default="12951")
+    v.add_argument("--max-trains", type=int, default=44)
+    v.add_argument("--days", type=int, default=30)
+    v.add_argument("--start-date", default="2024-01-01")
+
     a = ap.parse_args()
 
     if a.cmd == "fetch":
@@ -90,6 +96,23 @@ def main() -> None:
             print("collected nothing - check the train numbers and the feed",
                   file=sys.stderr)
             raise SystemExit(1)
+        return
+
+    if a.cmd == "validate":
+        from .. import validate as val
+        from ..simconfig import SimConfig
+        from .corridor import build_corridor, build_roster
+        from .datameet import DatameetFeed
+        from .live import LiveStore
+        from .openmeteo import build_environments
+        feed = DatameetFeed()
+        cor, _ = build_corridor(feed, a.reference)
+        trains = build_roster(feed, cor, limit=a.max_trains)
+        envs = build_environments(cor, feed, a.start_date, a.days,
+                                  np.random.default_rng(1))
+        obs = val.observed_delays(LiveStore())
+        sim = val.simulated_delays(cor, trains, envs, SimConfig.load(), a.days)
+        print(val.report(val.compare(obs, sim)))
         return
 
     if a.cmd == "calibrate":

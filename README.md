@@ -108,12 +108,43 @@ fitted and against what, and that provenance is written into
 Two ways to fit them:
 
 ```bash
-# against a stated punctuality profile - reproducible, and the target is recorded
-python -m railcast.feeds calibrate --target-file my_target.json
+# collect running data - one call captures a whole journey so far
+setx RAILRADAR_API_KEY "rr_..."            # railradar.in, free tier: 1,000/month
+python -m railcast.feeds collect --trains 12951,12952,12953,12903,12904,12471
 
-# against running data you have collected yourself
-python -m railcast.feeds collect --trains 12951,12952,12903   # on a cron
+# check the simulator against what was actually collected
+python -m railcast.feeds validate
+
+# fit the delay parameters
+python -m railcast.feeds calibrate --target-file my_target.json
 ```
+
+`validate` is the test the project was missing: everything upstream can be
+checked against a published source, but how delay arises could not be checked at
+all until there were real arrivals to compare with. It compares station-level
+delay on both sides - comparing mid-run delay against end-of-run delay would
+flatter the simulator.
+
+The first 241 observed arrivals say the simulator is wrong in a specific way:
+
+| | observed | simulated |
+|---|---|---|
+| median delay | 16 min | 4 min |
+| P90 | 57 min | 109 min |
+| P99 | 65 min | 287 min |
+| within 15 min | 47% | 64% |
+
+Real delay is **tighter and later** than the model. The simulator has too many
+trains running to time and too many running catastrophically late - bimodal
+where the real distribution is unimodal. That is a real finding about the model,
+from real data, and it is the next thing to fix.
+
+Note that live responses mark some stations `upcoming` while still carrying an
+"actual" time. That is the operator's own projection, not an observation.
+`LiveRecord.observed` excludes them; fitting on them would be training on
+another system's forecast and calling it ground truth. They are kept separately
+as `is_incumbent_eta`, because the deployed system's ETA is the baseline worth
+beating.
 
 The shipped fit is against a **stated** target, not a measurement: roughly 75%
 of Rajdhani journeys arriving within 15 minutes, down to 50% for passenger

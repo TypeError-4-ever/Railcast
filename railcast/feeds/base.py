@@ -83,15 +83,40 @@ class StopRecord:
 
 @dataclass(frozen=True)
 class LiveRecord:
-    """A position report for a running train."""
+    """One observed station event for a running train.
+
+    Times are minutes from midnight of the train's own start date, so a run that
+    crosses midnight stays monotonic.
+    """
     train_number: str
     station_code: str
-    scheduled: float          # minutes from midnight
+    scheduled: float
     actual: float | None
     delay_min: float | None
     event: str                # "arrival" | "departure"
     observed_at: float        # unix seconds
     source: str
+    start_date: str = ""      # the train's start date, not the observation date
+    sequence: int = 0         # position along the route
+    distance_km: float = 0.0  # cumulative km from origin, as the operator has it
+    is_halt: bool = False
+    speed_to_next_kmph: float = 0.0
+    status: str = ""          # departed | at-station | upcoming
+
+    @property
+    def observed(self) -> bool:
+        """True only if the train has actually been reported here.
+
+        An 'upcoming' station can still carry an actual time - that is the
+        operator's own projection, not an observation. Fitting on those would
+        be training on another system's forecast and calling it ground truth.
+        """
+        return self.status in ("departed", "at-station") and self.actual is not None
+
+    @property
+    def is_incumbent_eta(self) -> bool:
+        """The ETA the deployed system is showing right now - a real baseline."""
+        return self.status == "upcoming" and self.actual is not None
 
 
 # --------------------------------------------------------------------------- #

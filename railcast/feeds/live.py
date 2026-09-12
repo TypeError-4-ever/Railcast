@@ -70,14 +70,19 @@ class LiveStore:
         if not rows:
             return {"records": 0, "trains": 0, "days": 0,
                     "note": "nothing collected yet - run `python -m railcast.feeds collect`"}
-        days = {datetime.utcfromtimestamp(r.observed_at).date().isoformat() for r in rows}
-        delays = [r.delay_min for r in rows if r.delay_min is not None]
+        obs = [r for r in rows if r.observed]
+        eta = [r for r in rows if r.is_incumbent_eta]
+        delays = sorted(r.delay_min for r in obs if r.delay_min is not None)
         return {
             "records": len(rows),
+            "observed_arrivals": len(obs),
+            "incumbent_eta_rows": len(eta),
             "trains": len({r.train_number for r in rows}),
             "stations": len({r.station_code for r in rows}),
-            "days": len(days),
-            "median_delay_min": (sorted(delays)[len(delays) // 2] if delays else None),
+            "run_dates": len({r.start_date for r in rows if r.start_date}),
+            "median_observed_delay_min": (delays[len(delays) // 2] if delays else None),
+            "note": ("observed rows are ground truth; incumbent_eta rows are the "
+                     "deployed system's own forecast, kept as a baseline"),
         }
 
 
@@ -118,22 +123,45 @@ class RailRadarFeed(LiveFeed):
             return json.loads(r.read().decode("utf-8"))
 
     def running_status(self, number: str, start_date: str = "") -> list[LiveRecord]:
+        """Every station event on today's run that has actually been reported.
+
+        The live endpoint returns the whole route, with actual times filled in
+        for stations already passed. One call therefore captures a journey's
+        entire history so far, which is why polling once a day is enough.
+        """
         payload = self._get(f"/trains/{number}/live")
         data = payload.get("data") or {}
+        route = data.get("route") or []
+        started = data.get("startDate") or start_date or ""
+        base = _midnight(started)
         now = time.time()
         out = []
-        for stop in _iter_stops(data):
-            sched = _first_minute(stop, ("scheduledArrival", "sta", "scheduled_arrival"))
-            actual = _first_minute(stop, ("actualArrival", "ata", "actual_arrival"))
-            delay = stop.get("delayArrival", stop.get("delay"))
-            code = stop.get("stationCode") or stop.get("station_code") or stop.get("code")
+        for stop in route:
+            code = stop.get("stationCode")
             if not code:
                 continue
-            out.append(LiveRecord(
-                train_number=str(number), station_code=str(code),
-                scheduled=sched if sched is not None else 0.0, actual=actual,
-                delay_min=None if delay is None else float(delay),
-                event="arrival", observed_at=now, source=self.name))
+            common = dict(
+                train_number=str(data.get("trainNumber") or number),
+                station_code=str(code), source=self.name, observed_at=now,
+                start_date=started, sequence=int(stop.get("sequence") or 0),
+                distance_km=float(stop.get("distance") or 0.0),
+                is_halt=bool(stop.get("isHalt")),
+                speed_to_next_kmph=float(stop.get("speedToNextStationKmph") or 0.0),
+                status=str(stop.get("status") or ""))
+            for event, sk, ak, dk in (
+                    ("arrival", "scheduledArrival", "actualArrival", "delayArrival"),
+                    ("departure", "scheduledDeparture", "actualDeparture",
+                     "delayDeparture")):
+                sched = _iso_minutes(stop.get(sk), base)
+                actual = _iso_minutes(stop.get(ak), base)
+                if sched is None and actual is None:
+                    continue
+                delay = stop.get(dk)
+                out.append(LiveRecord(
+                    scheduled=sched if sched is not None else 0.0,
+                    actual=actual,
+                    delay_min=None if delay is None else float(delay),
+                    event=event, **common))
         return out
 
 
@@ -195,6 +223,29 @@ def collect(feed: LiveFeed, numbers, store: LiveStore | None = None,
             print(f"  {num}: {len(records)} station reports")
         time.sleep(pause)
     return total
+
+
+def _midnight(start_date: str) -> datetime | None:
+    """Midnight of the train's start date, in the feed's own timezone."""
+    if not start_date:
+        return None
+    try:
+        return datetime.fromisoformat(start_date)
+    except ValueError:
+        return None
+
+
+def _iso_minutes(stamp, base) -> float | None:
+    """ISO-8601 timestamp -> minutes from the start date's midnight."""
+    if not stamp or base is None:
+        return None
+    try:
+        t = datetime.fromisoformat(str(stamp))
+    except ValueError:
+        return None
+    if t.tzinfo is not None and base.tzinfo is None:
+        base = base.replace(tzinfo=t.tzinfo)
+    return (t - base).total_seconds() / 60.0
 
 
 def _iter_stops(data):
