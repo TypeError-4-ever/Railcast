@@ -10,3 +10,9 @@ venv/
 # `python run_prototype.py`. The summary tables next to it are committed.
 outputs/data/*.parquet
 outputs/*.log
+
+# Real feed data: downloaded on demand by `python -m railcast.feeds fetch`
+data/raw/
+data/cache/
+# Collected live position reports are the user's own accumulated history
+data/live/
