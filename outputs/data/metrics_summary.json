@@ -1,0 +1,71 @@
+{
+  "n_forecasts": 197472,
+  "baseline_mae_min": 19.43,
+  "railcast_mae_min": 8.52,
+  "mae_improvement_pct": 56.1,
+  "baseline_p90_min": 54.71,
+  "railcast_p90_min": 22.24,
+  "coverage_pct": 81.34,
+  "nominal_coverage_pct": 80.0,
+  "mean_window_min": 26.7,
+  "corridor": "New Delhi - Mumbai Central (1386 km, 35 stations)",
+  "trains": 32,
+  "operating_days_simulated": 450,
+  "train_days": [
+    0,
+    314
+  ],
+  "calib_days": [
+    315,
+    381
+  ],
+  "test_days": [
+    382,
+    449
+  ],
+  "baseline_definition": "baseline_arr",
+  "rows_train": 921524,
+  "rows_calib": 195616,
+  "rows_test": 197472,
+  "free_run_model": {
+    "n": 260543,
+    "mae_min": 1.1900763487358856,
+    "theoretical_mae_min": 3.376051193698115
+  },
+  "rules_only_mae_min": 11.68,
+  "precedence_experiment": {
+    "a": "12953",
+    "b": "12915",
+    "runs": 24,
+    "day": 390,
+    "cost_hold_b": 1831.52,
+    "cost_hold_a": 1857.43,
+    "se_hold_b": 23.66,
+    "se_hold_a": 23.06,
+    "delta": 25.91,
+    "delta_by": {
+      "held": -32.03638422609203,
+      "blocker": 48.79655924039454,
+      "others": 9.148547232798563,
+      "total": 25.908722247101064
+    },
+    "delta_se": {
+      "held": 2.227933105437405,
+      "blocker": 4.3572178943993,
+      "others": 4.174490316920533,
+      "total": 8.371853283448575
+    }
+  },
+  "connection_reliability_ece": 0.0118,
+  "serving": {
+    "ms_per_station_forecast": 0.221,
+    "full_corridor_reforecast_s": 0.159,
+    "station_forecasts_per_cycle": 719,
+    "projected_national_reforecast_s": 64.6
+  },
+  "punctuality_simulated": {
+    "median_delay_min": 15.6,
+    "p90_delay_min": 70.6,
+    "within_15_min_pct": 49.2
+  }
+}
