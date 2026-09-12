@@ -8,8 +8,10 @@ simulated New Delhi – Mumbai Central corridor. It produces the numbers, tables
 and charts that go into the deck.
 
 ```bash
-python run_prototype.py                # full run, ~450 simulated operating days
-python run_prototype.py --quick        # 60 days, ~90 seconds, for iterating
+python -m railcast.feeds fetch         # real timetable data, ~99 MB, once
+python run_prototype.py                # real corridor, real weather
+python run_prototype.py --quick        # 60 days, for iterating
+python run_prototype.py --source synthetic   # no network at all
 ```
 
 Everything lands in `outputs/`:
@@ -57,27 +59,77 @@ looped for faster ones behind them.
 - **Coverage audited** per zone, per horizon, per time of day and per month
   against the nominal 80%.
 
+## Where the data comes from
+
+`--source real` (the default) builds the corridor from published data. Nothing
+about the route, the roster or the weather is invented any more.
+
+| Input | Source | Licence |
+|---|---|---|
+| 8,990 stations - code, name, coordinates | [datameet/railways](https://github.com/datameet/railways) | CC0 |
+| 5,208 trains - number, name, type, route distance | same | CC0 |
+| 417,080 scheduled calls - the working timetable | same | CC0 |
+| Observed weather, every day, per corridor segment | [Open-Meteo](https://open-meteo.com) ERA5 reanalysis | CC BY 4.0 |
+| Live running position | `RailRadarFeed` (needs a key) or the IR feed | - |
+
+Three quantities that were guesses are now measured from the timetable:
+
+- **km posts** - great-circle distance between real station coordinates, scaled
+  so the total matches the route distance Indian Railways publishes. For
+  12951 that is 1384 km, and the built corridor reproduces it exactly.
+- **Sectional speed** - the speed implied by the fastest booked run over each
+  section, so the limit is what the timetable actually allows.
+- **Recovery padding** - booked run time minus free-run time, per section, per
+  train. Previously a class constant; the real spread runs from 3.7% on a
+  Rajdhani to 31% on a Janata Express, which is most of why the two behave
+  nothing alike.
+
+Weather is real and the seasonal pattern falls out of it rather than being coded
+in: January fog costs up to 17% of section speed on Delhi-Kota and nothing at
+all on the coast, while rain peaks on Surat-Mumbai in July.
+
+## What is still not real
+
+**There is no public archive of past Indian Railways arrivals.** NTES serves
+current and near-future state only, and nobody publishes the history. So the
+part of the simulator that *generates* delay cannot be fitted from published
+data:
+
+- run-time friction and its spread across days
+- incident rate and severity
+- block clearance time and how hard a controller clears a premier train's path
+- temporary speed restrictions and engineering blocks
+
+Every one of those lives in `railcast/simconfig.py`, in one object, so they can
+be listed rather than buried. `SimConfig.provenance()` reports whether they were
+fitted and against what, and that provenance is written into
+`metrics_summary.json` on every run.
+
+Two ways to fit them:
+
+```bash
+# against a stated punctuality profile - reproducible, and the target is recorded
+python -m railcast.feeds calibrate --target-file my_target.json
+
+# against running data you have collected yourself
+python -m railcast.feeds collect --trains 12951,12952,12903   # on a cron
+```
+
+The shipped fit is against a **stated** target, not a measurement: roughly 75%
+of Rajdhani journeys arriving within 15 minutes, down to 50% for passenger
+services. That target is an assumption. The fit reaches it to within about 10
+points for Rajdhani and Express and undershoots Superfast by 23 - those
+residuals are recorded in the config rather than smoothed over.
+
 ## The honesty line
 
-**Every number here comes from a simulator I wrote. No Indian Railways data was
-used, downloaded, or consulted.** Station names, km posts and train numbers are
-written from general knowledge of the route and are approximate. Timetables,
-running times, delays, conflicts and weather are all generated.
-
-The simulator's parameters were set by hand until corridor punctuality looked
-plausible - roughly half of journeys arriving within 15 minutes, median about 15
-minutes late - but they were **not fitted to published punctuality returns**.
-That calibration is step 2 of the roadmap and has not been done.
-
-What the results do show is that the *method* works on a problem with the right
-shape: the forecaster never sees the noise that generates the delay, the
-baseline is computed on exactly the same rows, and the split is temporal. What
-they do not show is field performance. A simulator validating a method is not a
-trial.
-
-Every chart carries that caption in its footer. Keep it there. The deck already
-frames its numbers as "targets we will measure against, not results claimed",
-and that framing is worth more in the room than an unqualified number.
+The corridor, the roster, the timetable, the padding and the weather are real.
+**How delay arises is still modelled, not measured**, and the forecasting
+results depend on it. What the numbers establish is that the method works on a
+problem with the right shape: the forecaster never sees the noise that generates
+the delay, the baseline is computed on exactly the same rows, and the split is
+temporal. They are not a measurement of field performance, and the first real
+running data collected will change them.
 
 ## Charts, and where each one belongs in the deck
 
@@ -103,6 +155,15 @@ and that framing is worth more in the room than an unqualified number.
 
 ```
 railcast/
+  feeds/
+    base.py      the adapter interfaces, caching and HTTP
+    datameet.py  real stations, trains and the working timetable
+    openmeteo.py real observed weather, and the fog index derived from it
+    corridor.py  build the block graph and roster from a feed
+    live.py      live position adapters, the collector and the local store
+    __main__.py  fetch / status / corridor / collect / calibrate
+  simconfig.py   every parameter that is not measured, in one object
+  calibrate.py   fit those parameters to data or to a stated target
   corridor.py    station list, km posts, zones, block sections, free-run physics
   trains.py      roster, priority classes, timetable construction with padding
   noise.py       pre-drawn stochastic terms, so a day is reproducible
