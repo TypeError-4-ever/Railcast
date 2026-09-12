@@ -25,9 +25,9 @@ from .corridor import CORRIDOR, Corridor
 from .noise import DayNoise, draw_day
 from .trains import Train
 
-HEADWAY = 3.0          # minutes of absolute block working, same direction
-MAX_HOLD = 25.0        # a loop hold is never open-ended
-PRECEDENCE_LOOKAHEAD = 20.0
+HEADWAY = 2.0          # minutes of absolute block working, same direction
+MAX_HOLD = 30.0        # a loop hold is never open-ended
+PRECEDENCE_LOOKAHEAD = 25.0
 
 
 # --------------------------------------------------------------------------- #
@@ -87,13 +87,15 @@ class TrainRun:
     dep: dict = field(default_factory=dict)
     conflict: dict = field(default_factory=dict)     # minutes lost before station
     held_by: dict = field(default_factory=dict)
+    cause: dict = field(default_factory=dict)        # station -> block | precedence
     incident: dict = field(default_factory=dict)
     unsched_stops: dict = field(default_factory=dict)
 
 
 class Simulator:
-    def __init__(self, cor: Corridor, trains):
+    def __init__(self, cor: Corridor, trains, config: SimConfig | None = None):
         self.cor = cor
+        self.cfg = config or DEFAULT
         self.trains = {t.number: t for t in trains}
         self.seqs = {}
         self.section_end = {}
@@ -154,7 +156,7 @@ class Simulator:
             key = (train.up, b)
 
             # --- block occupancy: absolute block working ---
-            free_at = occ.get(key, -1e9) + HEADWAY
+            free_at = occ.get(key, -1e9) + self.cfg.headway_min
             entry = max(t, free_at)
             wait = entry - t
             if wait > 0.2:
@@ -163,6 +165,7 @@ class Simulator:
                 other = last_user.get(key)
                 if other and other != tid:
                     runs[tid].held_by[stn] = other
+                    runs[tid].cause[stn] = "block"
                 if wait > 1.5:
                     runs[tid].unsched_stops[stn] = runs[tid].unsched_stops.get(stn, 0) + 1
 
@@ -188,7 +191,7 @@ class Simulator:
                 continue
 
             # --- arrival at a station ---
-            arr = exit_t + (1.4 if stn in train.halts else 0.6)
+            arr = exit_t + (cor.accel_stop if stn in train.halts else cor.accel_pass)
             if stochastic and (tid, stn) in noise.incident:
                 inc = noise.incident[(tid, stn)]
                 arr += inc
@@ -217,6 +220,7 @@ class Simulator:
                 dep += hold
                 runs[tid].conflict[stn] = runs[tid].conflict.get(stn, 0.0) + hold
                 runs[tid].held_by[stn] = blocker
+                runs[tid].cause[stn] = "precedence"
             runs[tid].dep[stn] = dep
             state[tid] = (cor.stations[stn].km, dep)
             heapq.heappush(heap, (dep, seq_counter, tid, pos + 1))
@@ -249,19 +253,25 @@ class Simulator:
             if not gives_way:
                 continue
             gap = (my_km - okm) if me.up else (okm - my_km)
-            if not (0 < gap < 75):
+            if not (0 < gap < self.cfg.precedence_range_km):
                 continue
             eta = ot + gap / max(other.max_speed * 0.85, 40.0) * 60.0
             slack = eta - dep
-            if -6.0 < slack < PRECEDENCE_LOOKAHEAD:
-                hold = min(MAX_HOLD, max(0.0, slack) + HEADWAY + 2.0)
+            # A premier service gets its path cleared harder and earlier.
+            lift = 1.0 + (self.cfg.priority_protection - 1.0) * max(
+                0, me.priority - self.prio(otid))
+            window = self.cfg.precedence_lookahead_min * lift
+            if -6.0 < slack < window:
+                clear = (self.cfg.headway_min + 2.0) * lift
+                # the lift buys earlier warning, not an unbounded hold
+                hold = min(self.cfg.max_hold_min, max(0.0, slack) + clear)
                 if hold > best:
                     best, blocker = hold, otid
         return best, blocker
 
     # -- public entry points ------------------------------------------------ #
     def run_day(self, env: DayEnvironment, rng=None, noise: DayNoise | None = None):
-        noise = noise if noise is not None else draw_day(self, rng)
+        noise = noise if noise is not None else draw_day(self, rng, self.cfg)
         starts = {tid: (0, t.dep_minute + noise.origin_delay[tid])
                   for tid, t in self.trains.items()}
         return self._run(env, starts, noise)
