@@ -37,4 +37,6 @@ Simulated punctuality: median 16 min late at destination, P90 71 min, 49% arrivi
 
 ## Honesty note for the deck
 
-These are **prototype results on a simulated corridor**, not measurements on Indian Railways data. The simulator generates conflicts, weather and incidents the forecaster cannot see, and the baseline is computed on exactly the same rows - but the numbers are evidence that the method works, not evidence of field performance. Label every chart that way.
+**Every number above comes from a simulator. No Indian Railways data was used, downloaded or consulted.** Station names, km posts and train numbers are approximate; timetables, running times, delays, conflicts and weather are all generated. The simulator's parameters were set by hand until punctuality looked plausible - they were not fitted to published punctuality returns, which is step 2 of the roadmap.
+
+What this does establish: the forecaster never sees the noise that generates the delay, the baseline is computed on exactly the same rows, and the split is temporal. That is evidence the method works on a problem of the right shape - not evidence of field performance. Label every chart that way.

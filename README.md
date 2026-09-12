@@ -59,11 +59,21 @@ looped for faster ones behind them.
 
 ## The honesty line
 
-**These are prototype results on a simulated corridor, not measurements on
-Indian Railways data.** The simulator is tuned so corridor punctuality sits in a
-plausible band (roughly half of journeys arriving within 15 minutes, median
-about 15 minutes late), and the forecaster never sees the noise that generates
-the delay — but a simulator validating a method is not a field trial.
+**Every number here comes from a simulator I wrote. No Indian Railways data was
+used, downloaded, or consulted.** Station names, km posts and train numbers are
+written from general knowledge of the route and are approximate. Timetables,
+running times, delays, conflicts and weather are all generated.
+
+The simulator's parameters were set by hand until corridor punctuality looked
+plausible - roughly half of journeys arriving within 15 minutes, median about 15
+minutes late - but they were **not fitted to published punctuality returns**.
+That calibration is step 2 of the roadmap and has not been done.
+
+What the results do show is that the *method* works on a problem with the right
+shape: the forecaster never sees the noise that generates the delay, the
+baseline is computed on exactly the same rows, and the split is temporal. What
+they do not show is field performance. A simulator validating a method is not a
+trial.
 
 Every chart carries that caption in its footer. Keep it there. The deck already
 frames its numbers as "targets we will measure against, not results claimed",

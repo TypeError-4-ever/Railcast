@@ -552,8 +552,9 @@ def c13_error_distribution(ctx, theme):
                   color=t["mute"], loc="left")
     _finish(fig, [ax, ax2], t, "Error distribution, and the operating reality behind it",
             "Left: carry-forward is biased late as well as noisy. Right: the "
-            "simulator is tuned to published punctuality behaviour, so the "
-            "learning problem is the real one.")
+            "delay distribution the simulator produces. Its parameters were set "
+            "by hand, not fitted to Indian Railways punctuality returns - "
+            "calibrating against those returns is step 2 of the roadmap.")
     _save(fig, "13_error_distribution", theme)
 
 
