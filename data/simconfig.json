@@ -1,0 +1,25 @@
+{
+  "friction_scale": 0.1,
+  "friction_sd": 0.025,
+  "block_noise_sd": 0.08,
+  "incidents_per_1000km": 1.225,
+  "incident_mean_min": 12.0,
+  "origin_delay_mean_min": 3.6,
+  "dwell_overrun_mean_min": 1.2,
+  "headway_min": 1.5,
+  "precedence_lookahead_min": 10.0,
+  "precedence_range_km": 100.0,
+  "max_hold_min": 16.0,
+  "priority_protection": 1.75,
+  "fitted": true,
+  "fitted_against": "stated punctuality target",
+  "fit_residual": {
+    "RAJDHANI": -0.1944,
+    "DURONTO": 0.1272,
+    "SUPERFAST": -0.1721,
+    "EXPRESS": 0.075,
+    "delay_median_min": 9.1,
+    "delay_p90_min": 134.0,
+    "delay_p99_min": 374.4
+  }
+}
