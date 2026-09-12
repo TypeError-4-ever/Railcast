@@ -134,6 +134,10 @@ class LiveFeed(ABC):
 
     name = "live"
 
+    def preflight(self) -> None:
+        """Raise now if this feed cannot possibly work. Called before polling, so
+        a scheduled job fails loudly instead of quietly collecting nothing."""
+
     @abstractmethod
     def running_status(self, number: str, start_date: str) -> list[LiveRecord]: ...
 

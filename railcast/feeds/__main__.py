@@ -76,11 +76,20 @@ def main() -> None:
 
     if a.cmd == "collect":
         from .live import LiveStore, NTESFeed, RailRadarFeed, collect
+        import sys
         feed = RailRadarFeed() if a.source == "railradar" else NTESFeed()
         store = LiveStore()
-        n = collect(feed, [x.strip() for x in a.trains.split(",")], store)
+        try:
+            n = collect(feed, [x.strip() for x in a.trains.split(",")], store)
+        except (RuntimeError, NotImplementedError) as exc:
+            print(f"cannot collect: {exc}", file=sys.stderr)
+            raise SystemExit(2)
         print(f"{n} position reports appended to {store.path()}")
         print(json.dumps(store.summary(), indent=2))
+        if n == 0:
+            print("collected nothing - check the train numbers and the feed",
+                  file=sys.stderr)
+            raise SystemExit(1)
         return
 
     if a.cmd == "calibrate":

@@ -59,7 +59,7 @@ def _style(theme: str):
     return t
 
 
-def _finish(fig, ax, t, title, subtitle=None, foot=FOOT):
+def _finish(fig, ax, t, title, subtitle=None, foot=None):
     axes = ax if isinstance(ax, (list, np.ndarray)) else [ax]
     for a in np.ravel(axes):
         a.set_axisbelow(True)
@@ -74,6 +74,7 @@ def _finish(fig, ax, t, title, subtitle=None, foot=FOOT):
         wrapped = textwrap.fill(subtitle, width=int(fig.get_figwidth() * 10.2))
         fig.text(0.012, 0.915, wrapped, ha="left", va="top", fontsize=10.5,
                  color=t["mute"], linespacing=1.35)
+    foot = FOOT if foot is None else foot
     if foot:
         fig.text(0.012, 0.018, foot, ha="left", fontsize=8, color=t["mute"])
     nl = wrapped.count(chr(10)) + 1 if subtitle else 0
@@ -85,6 +86,28 @@ def _save(fig, name, theme):
     d.mkdir(parents=True, exist_ok=True)
     fig.savefig(d / f"{name}.png", dpi=200)
     plt.close(fig)
+
+
+def _segment_order(cor):
+    """Corridor segments in the order a train meets them."""
+    out = []
+    for st in cor.stations:
+        if st.zone not in out:
+            out.append(st.zone)
+    return out
+
+
+def set_footer(summary) -> None:
+    """State the provenance of the run on every chart."""
+    global FOOT
+    src = (summary or {}).get("data_source", {})
+    if src.get("name") == "real":
+        FOOT = ("Real Indian Railways working timetable and stations (datameet, CC0) "
+                "with observed ERA5 weather - delay generation is still modelled, "
+                "not measured")
+    else:
+        FOOT = ("Hand-built New Delhi - Mumbai Central corridor - prototype result, "
+                "not an operational measurement")
 
 
 def _tick_stations(cor, n: int = 10):
@@ -179,7 +202,9 @@ def c03_coverage_heatmap(ctx, theme):
     t = _style(theme)
     tab = ctx["tables"]["by_zone_horizon"]
     piv = tab.pivot(index="zone_name", columns="horizon", values="coverage_pct")
-    piv = piv.reindex(index=["NR", "NCR", "WCR", "WR"],
+    order = [z for z in _segment_order(ctx["world"].cor) if z in piv.index]
+    order += [z for z in piv.index if z not in order]
+    piv = piv.reindex(index=order,
                       columns=[h for h in HORIZON_LABELS if h in piv.columns])
     cmap = LinearSegmentedColormap.from_list(
         "cov", [BAD, "#E9B949", GOOD, "#E9B949", BAD])
@@ -194,7 +219,8 @@ def c03_coverage_heatmap(ctx, theme):
     ax.set_xticks(range(piv.shape[1]))
     ax.set_xticklabels(piv.columns, fontsize=9.5)
     ax.set_yticks(range(piv.shape[0]))
-    ax.set_yticklabels(piv.index, fontsize=11)
+    ax.set_yticklabels(piv.index, fontsize=10.5)
+    ax.set_ylabel("Corridor segment")
     ax.set_xticks(np.arange(-.5, piv.shape[1], 1), minor=True)
     ax.set_yticks(np.arange(-.5, piv.shape[0], 1), minor=True)
     ax.grid(which="minor", color=t["bg"], lw=3)
@@ -202,9 +228,10 @@ def c03_coverage_heatmap(ctx, theme):
     cb = fig.colorbar(im, ax=ax, pad=0.02)
     cb.set_label("Achieved coverage of the nominal 80% window")
     cb.outline.set_visible(False)
-    _finish(fig, ax, t, "Coverage audited per zone and per horizon",
-            "Mondrian conformal calibration. Green is on target. A single pooled "
-            "coverage number would hide every cell that is not.")
+    _finish(fig, ax, t, "Coverage audited per segment and per horizon",
+            "Mondrian conformal calibration, on held-out days. Green is on "
+            "target. A single pooled coverage number would hide every cell "
+            "that is not.")
     _save(fig, "03_coverage_heatmap", theme)
 
 
@@ -614,6 +641,7 @@ def c14_latency(ctx, theme):
 # --------------------------------------------------------------------------- #
 def render_all(ctx) -> int:
     OUT.mkdir(parents=True, exist_ok=True)
+    set_footer(ctx.get("summary"))
     n = 0
     for fn in _charts:
         for theme in ("light", "dark"):

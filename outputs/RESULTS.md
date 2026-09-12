@@ -31,7 +31,7 @@ Conflict simulator alone, with the learned layer switched off, scores 13.5 min M
 
 - **Costed precedence.** One real conflict from day 232, re-run 24 times each way on identical days. Reversing the call saves 19024 2 minutes, costs 12288 +6 and the rest of the corridor -6 - -3 network-minutes on net (standard error 18).
 - **Connection risk.** Stated make-probability against realised outcome on held-out days: reliability error 0.006 over 40,000 forecasts.
-- **Serving.** 0.79 ms per station forecast, 0.54 s for a full corridor re-forecast of 689 station predictions, single process, no GPU. Linear extrapolation to 13,000 trains: 160 s in one process, about 10 s sharded across 16 zonal graphs - inside the 30 s budget.
+- **Serving.** 1.69 ms per station forecast, 1.17 s for a full corridor re-forecast of 689 station predictions, single process, no GPU. Linear extrapolation to 13,000 trains: 344 s in one process, about 22 s sharded across 16 zonal graphs - inside the 30 s budget.
 
 ## The corridor the model learns on
 

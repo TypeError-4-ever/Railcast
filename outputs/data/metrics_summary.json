@@ -110,10 +110,10 @@
   },
   "connection_reliability_ece": 0.0064,
   "serving": {
-    "ms_per_station_forecast": 0.786,
-    "full_corridor_reforecast_s": 0.542,
+    "ms_per_station_forecast": 1.691,
+    "full_corridor_reforecast_s": 1.166,
     "station_forecasts_per_cycle": 689,
-    "projected_national_reforecast_s": 160.0
+    "projected_national_reforecast_s": 344.5
   },
   "punctuality_simulated": {
     "median_delay_min": 22.0,

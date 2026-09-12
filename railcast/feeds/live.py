@@ -98,13 +98,17 @@ class RailRadarFeed(LiveFeed):
         self.api_key = api_key or os.environ.get("RAILRADAR_API_KEY", "")
         self.timeout = timeout
 
-    def _get(self, path: str):
-        import urllib.request
+    def preflight(self) -> None:
         if not self.api_key:
             raise RuntimeError(
-                "RAILRADAR_API_KEY is not set. Get a key at railradar.in, then\n"
-                "    export RAILRADAR_API_KEY=rr_live_...\n"
-                "or use --source synthetic to run without a live feed.")
+                "RAILRADAR_API_KEY is not set. Get a key at railradar.in, then:\n"
+                "  PowerShell   $env:RAILRADAR_API_KEY = 'rr_live_...'\n"
+                "  bash         export RAILRADAR_API_KEY=rr_live_...\n"
+                "Use setx on Windows to make it stick across sessions.")
+
+    def _get(self, path: str):
+        import urllib.request
+        self.preflight()
         req = urllib.request.Request(
             f"{self.base}{path}",
             headers={"Authorization": f"Bearer {self.api_key}",
@@ -175,6 +179,7 @@ def collect(feed: LiveFeed, numbers, store: LiveStore | None = None,
             pause: float = 1.0, verbose: bool = True) -> int:
     """One polling pass. Run this on a cron; the history builds itself."""
     store = store or LiveStore()
+    feed.preflight()                      # fail before touching the network
     total = 0
     for num in numbers:
         try:
