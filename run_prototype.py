@@ -37,11 +37,24 @@ def write_results_md(summary, tables, prec, conn, lat, card):
     from railcast.models import HORIZON_LABELS
     imp = tables["by_horizon"].set_index("horizon").reindex(
         [h for h in HORIZON_LABELS if h in set(tables["by_horizon"]["horizon"])])
+    src = s.get("data_source", {})
     lines = [
         "# RAILCAST prototype - results",
         "",
         f"Corridor: **{s['corridor']}**, {s['trains']} trains, "
         f"{s['operating_days_simulated']} simulated operating days.",
+        "",
+        (f"Data source: **{src.get('name')}**. "
+         + (f"Station master, roster and working timetable from "
+            f"{src['static_feed']['source']} "
+            f"({src['static_feed']['stations']:,} stations, "
+            f"{src['static_feed']['trains']:,} trains, "
+            f"{src['static_feed']['scheduled_calls']:,} scheduled calls, "
+            f"{src['static_feed']['licence']}); weather is ERA5 reanalysis via "
+            f"Open-Meteo from {src['weather_feed']['start_date']}. Still "
+            "invented: " + ", ".join(src["invented_inputs"]) + "."
+            if src.get("name") == "real" else
+            "Corridor, roster and weather are all hand-built.")),
         "",
         "Temporal holdout - trained on days "
         f"{s['train_days'][0]}-{s['train_days'][1]} "
@@ -134,6 +147,14 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=450)
     ap.add_argument("--quick", action="store_true", help="60 days, for a smoke run")
+    ap.add_argument("--source", choices=("real", "synthetic"), default="real",
+                    help="real = Indian Railways timetable + ERA5 weather; "
+                         "synthetic = the hand-built corridor, no network")
+    ap.add_argument("--reference", default="12951",
+                    help="train whose route defines the corridor spine")
+    ap.add_argument("--start-date", default="2024-01-01",
+                    help="first calendar day, for real weather lookup")
+    ap.add_argument("--max-trains", type=int, default=48)
     ap.add_argument("--snapshots", type=int, default=4,
                     help="re-forecast snapshots sampled per operating day")
     ap.add_argument("--no-charts", action="store_true")
@@ -144,8 +165,42 @@ def main() -> None:
     DATA.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(23)
 
-    # ---- 1. ground truth ------------------------------------------------- #
-    world = World(n_days, seed=11)
+    # ---- 1. the world: real corridor and weather, or the synthetic one ---- #
+    source = {"name": "synthetic", "corridor": "hand-built New Delhi - Mumbai "
+              "Central corridor (35 stations, 1386 km)"}
+    if args.source == "real":
+        from railcast.feeds import DatameetFeed, OpenMeteoFeed
+        from railcast.feeds.corridor import build_corridor, build_roster
+        from railcast.feeds.openmeteo import build_environments
+
+        feed = DatameetFeed()
+        cor, meta = build_corridor(feed, args.reference)
+        trains = build_roster(feed, cor, min_span=0.5, limit=args.max_trains)
+        log(f"corridor from real timetable: {meta['spine_stations']} stations, "
+            f"{meta['route_km']:.0f} km (published {meta['published_km']:.0f}), "
+            f"{len(trains)} trains", t0)
+        envs = build_environments(cor, feed, args.start_date, n_days, rng)
+        log(f"observed weather for {len(envs)} days from {args.start_date} "
+            f"(ERA5 via Open-Meteo, {len(meta['segments'])} segments)", t0)
+        world = World(n_days, seed=11, cor=cor, trains=trains, envs=envs)
+        source = {
+            "name": "real",
+            "static_feed": feed.summary(),
+            "weather_feed": {"source": OpenMeteoFeed.name,
+                             "licence": OpenMeteoFeed.licence,
+                             "start_date": args.start_date},
+            "corridor": (f"{cor.code(0)} - {cor.code(cor.n_stations - 1)}, "
+                         f"{meta['route_km']:.0f} km, {meta['spine_stations']} "
+                         "stations, real working timetable"),
+            "corridor_meta": meta,
+            "invented_inputs": ["temporary speed restrictions",
+                                "engineering blocks",
+                                "run-time friction and incident rates",
+                                "conflict outcomes (no live feed collected yet)"],
+        }
+        source["delay_parameters"] = world.config.provenance()
+    else:
+        world = World(n_days, seed=11)
     world.simulate()
     log(f"simulated {n_days} operating days, {len(world.trains)} trains", t0)
 
@@ -199,7 +254,8 @@ def main() -> None:
     # ---- 6. tables -------------------------------------------------------- #
     summary = ev.overall(scored)
     summary.update({
-        "corridor": "New Delhi - Mumbai Central (1386 km, 35 stations)",
+        "data_source": source,
+        "corridor": source["corridor"],
         "trains": len(world.trains),
         "operating_days_simulated": n_days,
         "train_days": [0, tr_end - 1], "calib_days": [tr_end, ca_end - 1],
