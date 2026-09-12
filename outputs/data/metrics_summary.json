@@ -1,71 +1,123 @@
 {
-  "n_forecasts": 197472,
-  "baseline_mae_min": 19.43,
-  "railcast_mae_min": 8.52,
-  "mae_improvement_pct": 56.1,
-  "baseline_p90_min": 54.71,
-  "railcast_p90_min": 22.24,
-  "coverage_pct": 81.34,
+  "n_forecasts": 73431,
+  "baseline_mae_min": 37.55,
+  "railcast_mae_min": 13.55,
+  "mae_improvement_pct": 63.9,
+  "baseline_p90_min": 113.08,
+  "railcast_p90_min": 33.25,
+  "coverage_pct": 78.76,
   "nominal_coverage_pct": 80.0,
-  "mean_window_min": 26.7,
-  "corridor": "New Delhi - Mumbai Central (1386 km, 35 stations)",
-  "trains": 32,
-  "operating_days_simulated": 450,
-  "train_days": [
-    0,
-    314
-  ],
-  "calib_days": [
-    315,
-    381
-  ],
-  "test_days": [
-    382,
-    449
-  ],
-  "baseline_definition": "baseline_arr",
-  "rows_train": 921524,
-  "rows_calib": 195616,
-  "rows_test": 197472,
-  "free_run_model": {
-    "n": 260543,
-    "mae_min": 1.1900763487358856,
-    "theoretical_mae_min": 3.376051193698115
-  },
-  "rules_only_mae_min": 11.68,
-  "precedence_experiment": {
-    "a": "12953",
-    "b": "12915",
-    "runs": 24,
-    "day": 390,
-    "cost_hold_b": 1831.52,
-    "cost_hold_a": 1857.43,
-    "se_hold_b": 23.66,
-    "se_hold_a": 23.06,
-    "delta": 25.91,
-    "delta_by": {
-      "held": -32.03638422609203,
-      "blocker": 48.79655924039454,
-      "others": 9.148547232798563,
-      "total": 25.908722247101064
+  "mean_window_min": 37.5,
+  "data_source": {
+    "name": "real",
+    "static_feed": {
+      "source": "datameet/railways",
+      "licence": "CC0 1.0 (datameet/railways)",
+      "stations": 8697,
+      "trains": 5208,
+      "scheduled_calls": 417080
     },
-    "delta_se": {
-      "held": 2.227933105437405,
-      "blocker": 4.3572178943993,
-      "others": 4.174490316920533,
-      "total": 8.371853283448575
+    "weather_feed": {
+      "source": "open-meteo",
+      "licence": "CC BY 4.0 (Open-Meteo), ERA5 by Copernicus",
+      "start_date": "2024-01-01"
+    },
+    "corridor": "NDLS - BCT, 1384 km, 202 stations, real working timetable",
+    "corridor_meta": {
+      "reference_train": "12951",
+      "spine_stations": 202,
+      "segments": [
+        "NDLS-KOTA",
+        "KOTA-RTM",
+        "RTM-BRC",
+        "BRC-ST",
+        "ST-BCT"
+      ],
+      "route_km": 1384.0,
+      "published_km": 1384.0,
+      "blocks": 213,
+      "trains_on_corridor": 480,
+      "median_section_speed_kmh": 97.9
+    },
+    "invented_inputs": [
+      "temporary speed restrictions",
+      "engineering blocks",
+      "run-time friction and incident rates",
+      "conflict outcomes (no live feed collected yet)"
+    ],
+    "delay_parameters": {
+      "fitted": true,
+      "fitted_against": "stated punctuality target",
+      "residual": {
+        "RAJDHANI": -0.1944,
+        "DURONTO": 0.1272,
+        "SUPERFAST": -0.1721,
+        "EXPRESS": 0.075,
+        "delay_median_min": 9.1,
+        "delay_p90_min": 134.0,
+        "delay_p99_min": 374.4
+      },
+      "note": "These govern how delay is generated. They are the part of the simulator that is not measured from published data."
     }
   },
-  "connection_reliability_ece": 0.0118,
+  "corridor": "NDLS - BCT, 1384 km, 202 stations, real working timetable",
+  "trains": 44,
+  "operating_days_simulated": 240,
+  "train_days": [
+    0,
+    167
+  ],
+  "calib_days": [
+    168,
+    203
+  ],
+  "test_days": [
+    204,
+    239
+  ],
+  "baseline_definition": "baseline_arr",
+  "rows_train": 342891,
+  "rows_calib": 74825,
+  "rows_test": 73431,
+  "free_run_model": {
+    "n": 1116071,
+    "mae_min": 0.579661815531803,
+    "theoretical_mae_min": 0.8019528926243555
+  },
+  "rules_only_mae_min": 13.46,
+  "precedence_experiment": {
+    "a": "12288",
+    "b": "19024",
+    "runs": 24,
+    "day": 232,
+    "cost_hold_b": 3792.46,
+    "cost_hold_a": 3789.51,
+    "se_hold_b": 54.28,
+    "se_hold_a": 53.14,
+    "delta": -2.95,
+    "delta_by": {
+      "held": -2.4024743263976043,
+      "blocker": 5.942568932519673,
+      "others": -6.490705251956892,
+      "total": -2.950610645834805
+    },
+    "delta_se": {
+      "held": 1.7535830377052954,
+      "blocker": 3.4259925172995205,
+      "others": 16.191163034103493,
+      "total": 17.983457670063213
+    }
+  },
+  "connection_reliability_ece": 0.0064,
   "serving": {
-    "ms_per_station_forecast": 0.221,
-    "full_corridor_reforecast_s": 0.159,
-    "station_forecasts_per_cycle": 719,
-    "projected_national_reforecast_s": 64.6
+    "ms_per_station_forecast": 0.786,
+    "full_corridor_reforecast_s": 0.542,
+    "station_forecasts_per_cycle": 689,
+    "projected_national_reforecast_s": 160.0
   },
   "punctuality_simulated": {
-    "median_delay_min": 15.6,
-    "p90_delay_min": 70.6,
-    "within_15_min_pct": 49.2
+    "median_delay_min": 22.0,
+    "p90_delay_min": 150.3,
+    "within_15_min_pct": 46.4
   }
 }
