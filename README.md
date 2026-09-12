@@ -136,8 +136,27 @@ The first 241 observed arrivals say the simulator is wrong in a specific way:
 
 Real delay is **tighter and later** than the model. The simulator has too many
 trains running to time and too many running catastrophically late - bimodal
-where the real distribution is unimodal. That is a real finding about the model,
-from real data, and it is the next thing to fix.
+where the real distribution is unimodal.
+
+`calibrate --from-observed` fits the delay parameters to that distribution
+rather than to a stated assumption, matching station-level delay on both sides.
+It halves the loss and it does not close the gap:
+
+| | observed | simulated, after fitting |
+|---|---|---|
+| p25 | 6 min | -1 min |
+| p50 | 14 min | 7 min |
+| p75 | 23 min | 33 min |
+| p90 | 56 min | 82 min |
+| p95 | 61 min | 130 min |
+
+The fit drives `max_hold_min` and `precedence_lookahead_min` to the bottom of
+their ranges trying to kill the tail, and still cannot. **That is a structural
+result, not a tuning one**: no setting of these five parameters reproduces the
+real shape. Real delay is concentrated - most trains a little late, few
+disastrously so - while the simulator spreads out, because conflicts either miss
+a train entirely or cascade into it. The honest conclusion is that the conflict
+model, not its parameters, is what needs work next.
 
 Note that live responses mark some stations `upcoming` while still carrying an
 "actual" time. That is the operator's own projection, not an observation.

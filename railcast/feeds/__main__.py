@@ -34,6 +34,10 @@ def main() -> None:
     k.add_argument("--days", type=int, default=14)
     k.add_argument("--rounds", type=int, default=2)
     k.add_argument("--target-file", help="JSON: class -> fraction within 15 min")
+    k.add_argument("--from-observed", action="store_true",
+                   help="fit to arrivals actually collected, not a stated target")
+    k.add_argument("--include-passing", action="store_true",
+                   help="also use stations the train passes without a booked halt")
     k.add_argument("--start-date", default="2024-01-01")
 
     v = sub.add_parser("validate", help="compare the simulator with collected data")
@@ -125,8 +129,15 @@ def main() -> None:
         trains = build_roster(feed, cor, limit=a.max_trains)
         envs = build_environments(cor, feed, a.start_date, max(a.days, 30),
                                   np.random.default_rng(1))
-        cfg = cal.fit(cor, trains, envs, target=cal.load_target(a.target_file),
-                      days=a.days, rounds=a.rounds)
+        if a.from_observed:
+            from .live import LiveStore
+            target = cal.target_from_store(LiveStore(), trains,
+                                           halts_only=not a.include_passing)
+            cfg = cal.fit_observed(cor, trains, envs, target,
+                                   days=a.days, rounds=a.rounds)
+        else:
+            cfg = cal.fit(cor, trains, envs, target=cal.load_target(a.target_file),
+                          days=a.days, rounds=a.rounds)
         cfg.save()
         print(json.dumps(cfg.provenance(), indent=2))
         return

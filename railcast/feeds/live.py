@@ -50,15 +50,32 @@ class LiveStore:
                 n += 1
         return n
 
-    def read(self) -> list[LiveRecord]:
+    def read(self, dedupe: bool = True) -> list[LiveRecord]:
+        """Every record on disk, one per station event by default.
+
+        The file stays append-only so the raw history is auditable, but polling
+        the same train twice re-reports every station it has already passed.
+        Left raw, a nightly cron would count an early station once per poll and
+        weight it dozens of times in any fit. Keyed on the train's own run, the
+        later observation wins - actual times firm up as a train progresses.
+        """
         out = []
-        for p in sorted(self.root.glob("*.jsonl")):
-            with open(p, encoding="utf-8") as fh:
+        for path in sorted(self.root.glob("*.jsonl")):
+            with open(path, encoding="utf-8") as fh:
                 for line in fh:
                     line = line.strip()
                     if line:
                         out.append(LiveRecord(**json.loads(line)))
-        return out
+        if not dedupe:
+            return out
+        latest: dict[tuple, LiveRecord] = {}
+        for r in out:
+            key = (r.train_number, r.start_date, r.station_code, r.event)
+            prev = latest.get(key)
+            if prev is None or r.observed_at >= prev.observed_at:
+                latest[key] = r
+        return sorted(latest.values(),
+                      key=lambda r: (r.train_number, r.start_date, r.sequence))
 
     def frame(self):
         import pandas as pd
@@ -67,6 +84,7 @@ class LiveStore:
 
     def summary(self) -> dict:
         rows = self.read()
+        raw = len(self.read(dedupe=False))
         if not rows:
             return {"records": 0, "trains": 0, "days": 0,
                     "note": "nothing collected yet - run `python -m railcast.feeds collect`"}
@@ -75,6 +93,8 @@ class LiveStore:
         delays = sorted(r.delay_min for r in obs if r.delay_min is not None)
         return {
             "records": len(rows),
+            "rows_on_disk": raw,
+            "duplicate_reports_collapsed": raw - len(rows),
             "observed_arrivals": len(obs),
             "incumbent_eta_rows": len(eta),
             "trains": len({r.train_number for r in rows}),

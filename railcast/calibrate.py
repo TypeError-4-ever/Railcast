@@ -135,6 +135,122 @@ def fit(cor, trains, envs, target: dict | None = None, days: int = 20,
 
 
 # --------------------------------------------------------------------------- #
+# fitting against arrivals actually observed
+# --------------------------------------------------------------------------- #
+FIT_QUANTILES = (25, 50, 75, 90, 95)
+MIN_OBSERVATIONS = 150      # below this, refuse: the fit would be noise
+TRUSTWORTHY = 2000          # below this, fit but say so
+MIN_PER_CLASS = 30          # below this, do not fit that class separately
+
+
+def target_from_store(store, trains=None, halts_only: bool = True) -> dict:
+    """Turn collected arrivals into a fitting target.
+
+    Only rows the operator has actually reported count. Rows the feed marks
+    `upcoming` carry the deployed system's own projection, and fitting on those
+    would be fitting to a competitor's forecast rather than to what happened.
+    """
+    from .validate import observed_delays
+
+    rows = [r for r in store.read()
+            if r.observed and r.event == "arrival" and r.delay_min is not None
+            and (r.is_halt or not halts_only)]
+    if len(rows) < MIN_OBSERVATIONS:
+        raise RuntimeError(
+            f"only {len(rows)} observed arrivals at booked halts; need at least "
+            f"{MIN_OBSERVATIONS} before a fit means anything. Keep the collector "
+            "running:\n"
+            "    python -m railcast.feeds collect --trains 12951,...")
+    delays = np.array([r.delay_min for r in rows], dtype=float)
+
+    by_class: dict[str, tuple] = {}
+    if trains:
+        klass = {t.number: t.klass for t in trains}
+        buckets: dict[str, list] = {}
+        for r in rows:
+            k = klass.get(r.train_number)
+            if k:
+                buckets.setdefault(k, []).append(r.delay_min < 15.0)
+        by_class = {k: (float(np.mean(v)), len(v))
+                    for k, v in buckets.items() if len(v) >= MIN_PER_CLASS}
+
+    return {
+        "source": "observed",
+        "n": len(rows),
+        "quantiles": {q: float(np.percentile(delays, q)) for q in FIT_QUANTILES},
+        "within_15": float(np.mean(delays < 15.0)),
+        "by_class": by_class,
+        "trains_seen": sorted({r.train_number for r in rows}),
+        "halts_only": halts_only,
+    }
+
+
+def _observed_loss(sim: np.ndarray, target: dict) -> float:
+    """Relative error on each quantile, plus the on-time fraction."""
+    if sim.size == 0:
+        return 1e9
+    rel = [abs(float(np.percentile(sim, q)) - v) / max(abs(v), 5.0)
+           for q, v in target["quantiles"].items()]
+    punc = abs(float(np.mean(sim < 15.0)) - target["within_15"])
+    return float(np.mean(rel)) + 1.5 * punc
+
+
+def fit_observed(cor, trains, envs, target: dict, days: int = 20, rounds: int = 2,
+                 probes: int = 5, base: SimConfig | None = None,
+                 verbose: bool = True) -> SimConfig:
+    """Coordinate descent against the distribution actually observed.
+
+    Simulated and observed delays are both taken at booked halts, station by
+    station. Comparing mid-run delay against end-of-run delay would flatter the
+    simulator, so the two sides are measured the same way.
+    """
+    from .validate import simulated_delays
+
+    cfg = base or SimConfig()
+    halts = target.get("halts_only", True)
+
+    def score(c: SimConfig) -> float:
+        return _observed_loss(
+            simulated_delays(cor, trains, envs, c, days, halts_only=halts), target)
+
+    best = score(cfg)
+    if verbose:
+        print(f"  fitting to {target['n']:,} observed arrivals from "
+              f"{len(target['trains_seen'])} trains")
+        print(f"  start loss {best:.4f}")
+    for r in range(rounds):
+        for knob, (lo, hi) in KNOBS:
+            cur = getattr(cfg, knob)
+            for v in np.linspace(lo, hi, probes):
+                trial = replace(cfg, **{knob: float(v)})
+                sc = score(trial)
+                if sc < best - 1e-4:
+                    best, cfg = sc, trial
+            if verbose:
+                print(f"  round {r + 1} {knob:26s} {cur:7.3f} -> "
+                      f"{getattr(cfg, knob):7.3f}   loss {best:.4f}")
+
+    got = simulated_delays(cor, trains, envs, cfg, days, halts_only=halts)
+    residual = {f"p{q}_gap_min": round(float(np.percentile(got, q)) - v, 1)
+                for q, v in target["quantiles"].items()}
+    residual["within_15_gap"] = round(float(np.mean(got < 15.0))
+                                      - target["within_15"], 3)
+    residual["n_observed"] = target["n"]
+    note = ("observed arrivals, RailRadar live feed"
+            if target["n"] >= TRUSTWORTHY else
+            f"observed arrivals ({target['n']}) - below {TRUSTWORTHY}, "
+            "treat as provisional")
+    cfg = replace(cfg, fitted=True, fitted_against=note, fit_residual=residual)
+    if verbose:
+        print("  after fit:  " + "  ".join(
+            f"p{q} {float(np.percentile(got, q)):.0f}m (obs {v:.0f}m)"
+            for q, v in target["quantiles"].items()))
+        if target["n"] < TRUSTWORTHY:
+            print(f"  NOTE: {target['n']} observations is thin. Provisional.")
+    return cfg
+
+
+# --------------------------------------------------------------------------- #
 def target_from_live(store) -> dict:
     """Punctuality profile measured from collected running data."""
     rows = store.read()
