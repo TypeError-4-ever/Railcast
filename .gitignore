@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+
+# Regenerable: the full scored test frame is 22 MB and is rebuilt by
+# `python run_prototype.py`. The summary tables next to it are committed.
+outputs/data/*.parquet
+outputs/*.log
