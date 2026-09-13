@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    a { color: #B45309; } a:hover { color: #8a3f07; }
+    .sv text { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+  </style>
+</helmet>
+
+<div style="width: 1600px; height: 900px; box-sizing: border-box; background: #FFFFFF; color: #12161F; display: flex; flex-direction: column;">
+  <div style="height: 6px; background: #B45309;"></div>
+
+  <div style="padding: 26px 52px 0; display: flex; align-items: baseline; gap: 16px;">
+    <span style="font-size: 30px; font-weight: 700; letter-spacing: -0.5px;">Technical Approach</span>
+    <span style="font-size: 14.5px; color: #5B6472;">five stages, each one testable on its own</span>
+    <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A94A3;">03</span>
+  </div>
+  <div style="height: 1px; background: #DDE1E8; margin: 16px 52px 0;"></div>
+
+  <!-- pipeline -->
+  <div style="padding: 18px 52px 0;">
+    <svg class="sv" viewBox="0 0 1490 250" style="width: 100%;">
+      <defs>
+        <marker id="t1" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0 0 L7 3.2 L0 6.4 z" fill="#8A94A3"/></marker>
+        <marker id="t2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0 0 L7 3.2 L0 6.4 z" fill="#B45309"/></marker>
+      </defs>
+
+      <!-- 1 data in : parallelogram -->
+      <path d="M28 58 L232 58 L212 142 L8 142 z" fill="#EFF5F4" stroke="#0F766E" stroke-width="1.7"/>
+      <text x="120" y="84" text-anchor="middle" font-size="12" font-weight="600" fill="#0F766E">1 &middot; DATA IN</text>
+      <text x="120" y="104" text-anchor="middle" font-size="11.5" fill="#12161F">NTES / FOIS position feed</text>
+      <text x="120" y="120" text-anchor="middle" font-size="11.5" fill="#12161F">timetable &middot; TSR &middot; weather</text>
+      <text x="120" y="135" text-anchor="middle" font-size="11.5" fill="#12161F">block graph from OSM</text>
+      <line x1="236" y1="100" x2="266" y2="100" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#t1)"/>
+
+      <!-- 2 state and features -->
+      <rect x="272" y="58" width="216" height="84" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+      <text x="380" y="84" text-anchor="middle" font-size="12" font-weight="600" fill="#5B6472">2 &middot; STATE &amp; FEATURES</text>
+      <text x="380" y="104" text-anchor="middle" font-size="11.5" fill="#12161F">delay momentum, padding left,</text>
+      <text x="380" y="120" text-anchor="middle" font-size="11.5" fill="#12161F">trains in the same block,</text>
+      <text x="380" y="135" text-anchor="middle" font-size="11.5" fill="#12161F">restrictions, weather, hour</text>
+      <line x1="492" y1="100" x2="522" y2="100" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#t1)"/>
+
+      <!-- 3 forecast core -->
+      <rect x="528" y="46" width="286" height="108" rx="2" fill="#FDF6EC" stroke="#B45309" stroke-width="2"/>
+      <text x="671" y="70" text-anchor="middle" font-size="12" font-weight="600" fill="#B45309">3 &middot; FORECAST CORE</text>
+      <text x="671" y="92" text-anchor="middle" font-size="11.5" fill="#12161F"><tspan font-weight="600">A</tspan> free-run time model &nbsp; <tspan font-weight="600">B</tspan> conflict simulator</text>
+      <text x="671" y="110" text-anchor="middle" font-size="11.5" fill="#12161F"><tspan font-weight="600">C</tspan> learned residual, direct multi-horizon</text>
+      <text x="671" y="128" text-anchor="middle" font-size="11.5" fill="#12161F"><tspan font-weight="600">D</tspan> conformal interval</text>
+      <text x="671" y="146" text-anchor="middle" font-size="10.5" fill="#8A94A3">one shot per horizon &mdash; error never compounds</text>
+      <line x1="818" y1="100" x2="848" y2="100" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#t1)"/>
+
+      <!-- 4 decision diamond -->
+      <path d="M962 40 L1072 100 L962 160 L852 100 z" fill="#FDF6EC" stroke="#B45309" stroke-width="2"/>
+      <text x="962" y="88" text-anchor="middle" font-size="12" font-weight="600" fill="#12161F">4 &middot; Coverage</text>
+      <text x="962" y="105" text-anchor="middle" font-size="12" font-weight="600" fill="#12161F">on target, per</text>
+      <text x="962" y="122" text-anchor="middle" font-size="12" font-weight="600" fill="#12161F">zone and horizon?</text>
+
+      <!-- yes -> delivery -->
+      <line x1="1076" y1="100" x2="1112" y2="100" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#t1)"/>
+      <text x="1086" y="90" font-size="11" font-weight="600" fill="#0F766E">yes</text>
+
+      <!-- no -> recalibrate, loops back into the core -->
+      <path d="M962 164 L962 216 L671 216 L671 158" fill="none" stroke="#B45309" stroke-width="1.7" stroke-dasharray="5 4" marker-end="url(#t2)"/>
+      <text x="930" y="182" font-size="11" font-weight="600" fill="#B45309">no</text>
+      <text x="816" y="232" text-anchor="middle" font-size="11" fill="#B45309">re-fit the conformal quantiles for the group that missed</text>
+
+      <!-- 5 delivery : terminator -->
+      <rect x="1118" y="58" width="364" height="84" rx="42" fill="#EFF5F4" stroke="#0F766E" stroke-width="1.8"/>
+      <text x="1300" y="84" text-anchor="middle" font-size="12" font-weight="600" fill="#0F766E">5 &middot; DELIVERY</text>
+      <text x="1300" y="104" text-anchor="middle" font-size="11.5" fill="#12161F">passenger app &middot; station displays &middot; SMS / IVR 139</text>
+      <text x="1300" y="120" text-anchor="middle" font-size="11.5" fill="#12161F">control-room console with costed precedence</text>
+      <text x="1300" y="136" text-anchor="middle" font-size="11.5" fill="#12161F">open REST / WebSocket API</text>
+    </svg>
+  </div>
+
+  <!-- lower half -->
+  <div style="flex-grow: 1; display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); gap: 34px; padding: 6px 52px 26px;">
+
+    <!-- what makes the forecast move -->
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: #B45309; letter-spacing: 1.5px;">WHAT MAKES THE FORECAST MOVE</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+        <div style="border: 1px solid #DDE1E8; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 14px; font-weight: 600;">Arrivals forced monotone</span>
+          <span style="font-size: 12.5px; color: #5B6472; line-height: 1.5;">A run can never arrive somewhere before it arrives at the station behind it.</span>
+        </div>
+        <div style="border: 1px solid #DDE1E8; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 14px; font-weight: 600;">Attribution on every change</span>
+          <span style="font-size: 12.5px; color: #5B6472; line-height: 1.5;">Names the blocking train, the section and the feature responsible.</span>
+        </div>
+        <div style="border: 1px solid #DDE1E8; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 14px; font-weight: 600;">Online correction at every halt</span>
+          <span style="font-size: 12.5px; color: #5B6472; line-height: 1.5;">Each actual arrival is a free label: the rest of the run re-forecasts.</span>
+        </div>
+        <div style="border: 1px solid #DDE1E8; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 14px; font-weight: 600;">Drift monitor and retraining</span>
+          <span style="font-size: 12.5px; color: #5B6472; line-height: 1.5;">Weekly incremental refit, alarm on coverage or MAE drift by zone.</span>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #DDE1E8; border-left: 3px solid #0F766E; background: #F6F7F9; border-radius: 3px; padding: 13px 16px; display: flex; gap: 30px; align-items: center; margin-top: 2px;">
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 21px; font-weight: 700; color: #0F766E;">30 s</span>
+          <span style="font-size: 11.5px; color: #5B6472;">full-network re-forecast</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 21px; font-weight: 700; color: #0F766E;">0.46 ms</span>
+          <span style="font-size: 11.5px; color: #5B6472;">per station prediction</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 21px; font-weight: 700; color: #0F766E;">no GPU</span>
+          <span style="font-size: 11.5px; color: #5B6472;">at serving time</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- tech stack -->
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: #0F766E; letter-spacing: 1.5px;">TECH STACK</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+
+        <div style="border: 1px solid #DDE1E8; border-top: 3px solid #B45309; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13.5px; font-weight: 600;">Models</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #5B6472; line-height: 1.7;">Python &middot; LightGBM<br>scikit-learn &middot; MAPIE<br>SHAP &middot; PyTorch Geometric</span>
+        </div>
+        <div style="border: 1px solid #DDE1E8; border-top: 3px solid #B45309; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13.5px; font-weight: 600;">Simulation</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #5B6472; line-height: 1.7;">NetworkX / igraph<br>event-driven block graph<br>priority rules from the WTT</span>
+        </div>
+        <div style="border: 1px solid #DDE1E8; border-top: 3px solid #0F766E; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13.5px; font-weight: 600;">Serving</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #5B6472; line-height: 1.7;">FastAPI &middot; Redis Streams<br>PostgreSQL + PostGIS<br>Docker &middot; Kubernetes</span>
+        </div>
+        <div style="border: 1px solid #DDE1E8; border-top: 3px solid #0F766E; border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13.5px; font-weight: 600;">Interface</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #5B6472; line-height: 1.7;">React &middot; MapLibre GL<br>Recharts &middot; WebSocket<br>SMS / IVR gateway</span>
+        </div>
+
+      </div>
+      <span style="font-size: 12px; color: #8A94A3; line-height: 1.5;">Every component is established open source with published benchmarks. No new trackside hardware &mdash; the system consumes position feeds Indian Railways already produces, through a swappable adapter.</span>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

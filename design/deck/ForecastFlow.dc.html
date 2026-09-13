@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    a { color: #B45309; } a:hover { color: #8a3f07; }
+    .fc text { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    .t  { font-size: 14px; font-weight: 600; fill: #12161F; }
+    .s  { font-size: 11.5px; fill: #5B6472; }
+    .br { font-size: 11.5px; font-weight: 600; }
+  </style>
+</helmet>
+
+<div style="width: 1500px; height: 1330px; box-sizing: border-box; background: #FFFFFF; color: #12161F; display: flex; flex-direction: column;">
+  <div style="height: 6px; background: #B45309;"></div>
+
+  <div style="padding: 24px 46px 0; display: flex; align-items: baseline; gap: 16px;">
+    <span style="font-size: 27px; font-weight: 700; letter-spacing: -0.4px;">Runtime flow &mdash; one re-forecast</span>
+    <span style="font-size: 14px; color: #5B6472;">what happens every 30 seconds, for every running train</span>
+  </div>
+
+  <!-- legend -->
+  <div style="padding: 12px 46px 0; display: flex; gap: 26px; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 7px;"><svg width="34" height="18"><rect x="1" y="1" width="32" height="16" rx="8" fill="#EFF5F4" stroke="#0F766E" stroke-width="1.5"/></svg><span style="font-size: 11.5px; color: #5B6472;">start / end</span></div>
+    <div style="display: flex; align-items: center; gap: 7px;"><svg width="34" height="18"><rect x="1" y="1" width="32" height="16" rx="1" fill="#FFFFFF" stroke="#12161F" stroke-width="1.5"/></svg><span style="font-size: 11.5px; color: #5B6472;">process</span></div>
+    <div style="display: flex; align-items: center; gap: 7px;"><svg width="34" height="18"><path d="M17 1 L33 9 L17 17 L1 9 z" fill="#FDF6EC" stroke="#B45309" stroke-width="1.5"/></svg><span style="font-size: 11.5px; color: #5B6472;">decision</span></div>
+    <div style="display: flex; align-items: center; gap: 7px;"><svg width="34" height="18"><path d="M7 1 L33 1 L27 17 L1 17 z" fill="#EFF5F4" stroke="#0F766E" stroke-width="1.5"/></svg><span style="font-size: 11.5px; color: #5B6472;">data</span></div>
+    <div style="display: flex; align-items: center; gap: 7px;"><svg width="34" height="18"><line x1="1" y1="9" x2="33" y2="9" stroke="#B45309" stroke-width="1.6" stroke-dasharray="5 4"/></svg><span style="font-size: 11.5px; color: #5B6472;">feedback</span></div>
+  </div>
+
+  <svg class="fc" viewBox="0 0 1500 1240" style="width: 100%; padding: 6px 0 0;">
+    <defs>
+      <marker id="m1" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0 0 L7 3.2 L0 6.4 z" fill="#8A94A3"/></marker>
+      <marker id="m2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0 0 L7 3.2 L0 6.4 z" fill="#B45309"/></marker>
+    </defs>
+
+    <!-- START -->
+    <rect x="440" y="30" width="360" height="52" rx="26" fill="#EFF5F4" stroke="#0F766E" stroke-width="1.8"/>
+    <text x="620" y="53" text-anchor="middle" class="t" fill="#0F766E">POSITION REPORT ARRIVES</text>
+    <text x="620" y="70" text-anchor="middle" class="s">a train is reported at a station, or the 30 s clock fires</text>
+    <line x1="620" y1="82" x2="620" y2="104" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+
+    <!-- P1 -->
+    <rect x="460" y="106" width="320" height="56" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+    <text x="620" y="128" text-anchor="middle" class="t">Update live state</text>
+    <text x="620" y="147" text-anchor="middle" class="s">delay, momentum over 3 sections, block occupancy</text>
+    <line x1="620" y1="162" x2="620" y2="184" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+
+    <!-- D1 -->
+    <path d="M620 186 L805 232 L620 278 L435 232 z" fill="#FDF6EC" stroke="#B45309" stroke-width="1.9"/>
+    <text x="620" y="228" text-anchor="middle" class="t">Train running?</text>
+    <text x="620" y="246" text-anchor="middle" class="s">departed, not terminated</text>
+    <line x1="620" y1="278" x2="620" y2="300" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+    <text x="634" y="295" class="br" fill="#0F766E">yes</text>
+    <path d="M805 232 L1000 232 L1000 296" fill="none" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+    <text x="838" y="222" class="br" fill="#5B6472">no</text>
+    <rect x="860" y="300" width="280" height="52" rx="26" fill="#F6F7F9" stroke="#8A94A3" stroke-width="1.6"/>
+    <text x="1000" y="322" text-anchor="middle" class="t" fill="#5B6472">SHOW BOOKED SCHEDULE</text>
+    <text x="1000" y="340" text-anchor="middle" class="s">flagged as not yet running</text>
+
+    <!-- P2 -->
+    <rect x="460" y="302" width="320" height="56" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+    <text x="620" y="324" text-anchor="middle" class="t">A &middot; Free-run time</text>
+    <text x="620" y="343" text-anchor="middle" class="s">per remaining section, from geometry and weather</text>
+    <line x1="620" y1="358" x2="620" y2="380" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+
+    <!-- P3 -->
+    <rect x="460" y="382" width="320" height="56" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+    <text x="620" y="404" text-anchor="middle" class="t">B &middot; Advance over the block graph</text>
+    <text x="620" y="423" text-anchor="middle" class="s">every train on the corridor, in event order</text>
+    <line x1="620" y1="438" x2="620" y2="460" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+
+    <!-- D2 -->
+    <path d="M620 462 L805 508 L620 554 L435 508 z" fill="#FDF6EC" stroke="#B45309" stroke-width="1.9"/>
+    <text x="620" y="504" text-anchor="middle" class="t">Block section</text>
+    <text x="620" y="522" text-anchor="middle" class="t">ahead occupied?</text>
+    <line x1="620" y1="554" x2="620" y2="576" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+    <text x="634" y="571" class="br" fill="#B45309">yes</text>
+    <path d="M435 508 L120 508 L120 840 L456 840" fill="none" stroke="#8A94A3" stroke-width="1.7" stroke-dasharray="4 3" marker-end="url(#m1)"/>
+    <text x="380" y="498" class="br" fill="#5B6472">no &mdash; runs clear</text>
+
+    <!-- D3 -->
+    <path d="M620 578 L805 624 L620 670 L435 624 z" fill="#FDF6EC" stroke="#B45309" stroke-width="1.9"/>
+    <text x="620" y="618" text-anchor="middle" class="t">Higher-priority train</text>
+    <text x="620" y="636" text-anchor="middle" class="t">closing from behind?</text>
+
+    <path d="M435 624 L310 624 L310 696" fill="none" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+    <text x="330" y="614" class="br" fill="#B45309">yes</text>
+    <path d="M805 624 L930 624 L930 696" fill="none" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+    <text x="846" y="614" class="br" fill="#5B6472">no</text>
+
+    <!-- P4a / P4b -->
+    <rect x="170" y="700" width="280" height="62" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+    <text x="310" y="722" text-anchor="middle" class="t">Loop the slower train</text>
+    <text x="310" y="740" text-anchor="middle" class="s">held at the next station with a loop;</text>
+    <text x="310" y="755" text-anchor="middle" class="s">record the blocker and the minutes</text>
+
+    <rect x="790" y="700" width="280" height="62" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+    <text x="930" y="722" text-anchor="middle" class="t">Queue behind</text>
+    <text x="930" y="740" text-anchor="middle" class="s">wait for the block to clear;</text>
+    <text x="930" y="755" text-anchor="middle" class="s">record the headway wait</text>
+
+    <path d="M310 762 L310 800 L616 800" fill="none" stroke="#8A94A3" stroke-width="1.7"/>
+    <path d="M930 762 L930 800 L624 800" fill="none" stroke="#8A94A3" stroke-width="1.7"/>
+    <line x1="620" y1="800" x2="620" y2="810" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+
+    <!-- P5 -->
+    <rect x="460" y="812" width="320" height="56" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+    <text x="620" y="834" text-anchor="middle" class="t">C &middot; Learned residual</text>
+    <text x="620" y="853" text-anchor="middle" class="s">one shot per horizon &mdash; never chained</text>
+    <line x1="620" y1="868" x2="620" y2="890" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+
+    <!-- P6 -->
+    <rect x="460" y="892" width="320" height="56" rx="2" fill="#FFFFFF" stroke="#12161F" stroke-width="1.7"/>
+    <text x="620" y="914" text-anchor="middle" class="t">D &middot; Conformal interval</text>
+    <text x="620" y="933" text-anchor="middle" class="s">for this horizon &times; segment &times; time-of-day group</text>
+    <line x1="620" y1="948" x2="620" y2="970" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+
+    <!-- D4 -->
+    <path d="M620 972 L805 1018 L620 1064 L435 1018 z" fill="#FDF6EC" stroke="#B45309" stroke-width="1.9"/>
+    <text x="620" y="1012" text-anchor="middle" class="t">Coverage on target</text>
+    <text x="620" y="1030" text-anchor="middle" class="t">for this group?</text>
+    <line x1="620" y1="1064" x2="620" y2="1086" stroke="#8A94A3" stroke-width="1.7" marker-end="url(#m1)"/>
+    <text x="634" y="1081" class="br" fill="#0F766E">yes</text>
+
+    <path d="M805 1018 L880 1018" fill="none" stroke="#B45309" stroke-width="1.7" marker-end="url(#m2)"/>
+    <text x="812" y="1008" class="br" fill="#B45309">no</text>
+    <rect x="884" y="990" width="250" height="56" rx="2" fill="#FDF6EC" stroke="#B45309" stroke-width="1.7"/>
+    <text x="1009" y="1012" text-anchor="middle" class="t">Re-fit the quantiles</text>
+    <text x="1009" y="1031" text-anchor="middle" class="s">on the calibration split</text>
+    <path d="M1009 990 L1009 920 L784 920" fill="none" stroke="#B45309" stroke-width="1.7" stroke-dasharray="5 4" marker-end="url(#m2)"/>
+
+    <!-- END -->
+    <rect x="440" y="1088" width="360" height="58" rx="29" fill="#EFF5F4" stroke="#0F766E" stroke-width="1.8"/>
+    <text x="620" y="1112" text-anchor="middle" class="t" fill="#0F766E">PUBLISH THE ARRIVAL WINDOW</text>
+    <text x="620" y="1130" text-anchor="middle" class="s">monotone arrivals &middot; attribution &middot; connection risk</text>
+
+    <!-- D5 : the free label -->
+    <path d="M804 1117 L1110 1117" fill="none" stroke="#B45309" stroke-width="1.7" marker-end="url(#m2)"/>
+    <path d="M1255 1075 L1395 1117 L1255 1159 L1115 1117 z" fill="#FDF6EC" stroke="#B45309" stroke-width="1.9"/>
+    <text x="1255" y="1113" text-anchor="middle" class="t">Actual arrival</text>
+    <text x="1255" y="1131" text-anchor="middle" class="t">observed?</text>
+    <path d="M1255 1075 L1255 134 L784 134" fill="none" stroke="#B45309" stroke-width="1.7" stroke-dasharray="5 4" marker-end="url(#m2)"/>
+    <text x="1270" y="1065" class="br" fill="#B45309">yes</text>
+    <text x="1272" y="620" class="br" fill="#B45309" transform="rotate(90 1272 620)" text-anchor="middle">every actual arrival is a free label &mdash; the rest of the run re-forecasts</text>
+  </svg>
+
+  <div style="padding: 0 46px 20px;">
+    <span style="font-size: 12px; color: #8A94A3; line-height: 1.5;">Two distinct mechanisms cost time and the flow keeps them apart: a train <strong style="color: #5B6472;">looped</strong> at a station is a controller's decision, and a train <strong style="color: #5B6472;">queued</strong> behind an occupied block is physics. Only the first is a choice the costed-precedence surface can price.</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

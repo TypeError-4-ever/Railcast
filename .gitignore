@@ -17,3 +17,5 @@ data/cache/
 # Collected live position reports are the user's own accumulated history
 data/live/
 
+
+outputs/pptx/

@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    a { color: #B45309; } a:hover { color: #8a3f07; }
+    .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 1.4px; }
+    .tech { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: #5B6472; line-height: 1.65; }
+  </style>
+</helmet>
+
+<div style="width: 1600px; height: 1020px; box-sizing: border-box; background: #FFFFFF; color: #12161F; display: flex; flex-direction: column;">
+  <div style="height: 6px; background: #B45309;"></div>
+
+  <div style="padding: 26px 52px 0; display: flex; align-items: baseline; gap: 16px;">
+    <span style="font-size: 30px; font-weight: 700; letter-spacing: -0.5px;">Tech Stack &mdash; system design</span>
+    <span style="font-size: 14.5px; color: #5B6472;">six layers, one direction of flow, and the loop that keeps it honest</span>
+  </div>
+  <div style="height: 1px; background: #DDE1E8; margin: 16px 52px 0;"></div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 268px; gap: 26px; padding: 20px 52px 26px;">
+
+    <!-- main stack -->
+    <div style="display: flex; flex-direction: column; gap: 0;">
+
+      <!-- L1 sources -->
+      <div style="display: flex; gap: 14px; align-items: stretch;">
+        <div style="width: 108px; display: flex; align-items: center;"><span class="lbl" style="color: #8A94A3;">SOURCES</span></div>
+        <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+          <div style="border: 1px solid #DDE1E8; border-radius: 3px; background: #F6F7F9; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">NTES / FOIS</span><span class="tech">live position feed</span></div>
+          <div style="border: 1px solid #DDE1E8; border-radius: 3px; background: #F6F7F9; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">Working timetable</span><span class="tech">schedules, halts, padding</span></div>
+          <div style="border: 1px solid #DDE1E8; border-radius: 3px; background: #F6F7F9; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">OSM / Overpass</span><span class="tech">block sections, loops</span></div>
+          <div style="border: 1px solid #DDE1E8; border-radius: 3px; background: #F6F7F9; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">Open-Meteo ERA5</span><span class="tech">observed + forecast weather</span></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; padding: 7px 0;"><svg width="16" height="17" viewBox="0 0 16 17"><path d="M8 0 L8 12 M3 8 L8 13 L13 8" stroke="#C3C9D4" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+      <!-- L2 ingest -->
+      <div style="display: flex; gap: 14px; align-items: stretch;">
+        <div style="width: 108px; display: flex; align-items: center;"><span class="lbl" style="color: #0F766E;">INGEST</span></div>
+        <div style="flex-grow: 1; border: 1.5px solid #0F766E; border-radius: 3px; background: #F3F8F7; padding: 12px 14px;">
+          <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px;">
+            <span style="font-size: 14px; font-weight: 600;">FeedAdapter</span>
+            <span style="font-size: 12px; color: #5B6472;">one interface; nothing above this layer knows which feed it is talking to</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+            <span class="tech" style="color: #12161F;">StaticFeed<br><span style="color: #8A94A3;">stations, roster, WTT</span></span>
+            <span class="tech" style="color: #12161F;">WeatherFeed<br><span style="color: #8A94A3;">fog index, rain</span></span>
+            <span class="tech" style="color: #12161F;">LiveFeed<br><span style="color: #8A94A3;">position + delay, polled</span></span>
+            <span class="tech" style="color: #12161F;">Phone motion<br><span style="color: #8A94A3;">opt-in, optional</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; padding: 7px 0;"><svg width="16" height="17" viewBox="0 0 16 17"><path d="M8 0 L8 12 M3 8 L8 13 L13 8" stroke="#C3C9D4" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+      <!-- L3 storage -->
+      <div style="display: flex; gap: 14px; align-items: stretch;">
+        <div style="width: 108px; display: flex; align-items: center;"><span class="lbl" style="color: #8A94A3;">STORAGE</span></div>
+        <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+          <div style="border: 1px solid #DDE1E8; border-radius: 3px; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">PostgreSQL + PostGIS</span><span class="tech">block graph, timetable, run history</span></div>
+          <div style="border: 1px solid #DDE1E8; border-radius: 3px; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">Redis Streams</span><span class="tech">live state, feature cache, fan-out</span></div>
+          <div style="border: 1px solid #DDE1E8; border-radius: 3px; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">LiveStore (append-only)</span><span class="tech">observed arrivals, de-duplicated on read</span></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; padding: 7px 0;"><svg width="16" height="17" viewBox="0 0 16 17"><path d="M8 0 L8 12 M3 8 L8 13 L13 8" stroke="#C3C9D4" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+      <!-- L4 compute -->
+      <div style="display: flex; gap: 14px; align-items: stretch;">
+        <div style="width: 108px; display: flex; align-items: center;"><span class="lbl" style="color: #B45309;">COMPUTE</span></div>
+        <div style="flex-grow: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px;">
+          <div style="border: 1.5px solid #B45309; border-radius: 3px; background: #FDF6EC; padding: 12px 14px;">
+            <span style="font-size: 13.5px; font-weight: 600; display: block; margin-bottom: 5px;">Offline &mdash; nightly / weekly</span>
+            <span class="tech" style="color: #12161F;">LightGBM free-run model (A)<br>LightGBM quantile residual (C)<br>Mondrian conformal fit (D)<br>SHAP attribution &middot; drift monitor</span>
+          </div>
+          <div style="border: 1.5px solid #B45309; border-radius: 3px; background: #FDF6EC; padding: 12px 14px;">
+            <span style="font-size: 13.5px; font-weight: 600; display: block; margin-bottom: 5px;">Online &mdash; every 30 seconds</span>
+            <span class="tech" style="color: #12161F;">NetworkX block-graph replay (B)<br>feature assembly from Redis<br>batched inference, monotone arrivals<br>0.46 ms per station prediction</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; padding: 7px 0;"><svg width="16" height="17" viewBox="0 0 16 17"><path d="M8 0 L8 12 M3 8 L8 13 L13 8" stroke="#C3C9D4" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+      <!-- L5 serving -->
+      <div style="display: flex; gap: 14px; align-items: stretch;">
+        <div style="width: 108px; display: flex; align-items: center;"><span class="lbl" style="color: #8A94A3;">SERVING</span></div>
+        <div style="flex-grow: 1; border: 1px solid #DDE1E8; border-radius: 3px; padding: 12px 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+          <span class="tech" style="color: #12161F;"><strong style="font-family: 'IBM Plex Sans'; font-size: 13px;">FastAPI</strong><br><span style="color: #8A94A3;">REST + WebSocket, p95 under 200 ms</span></span>
+          <span class="tech" style="color: #12161F;"><strong style="font-family: 'IBM Plex Sans'; font-size: 13px;">Docker &middot; Kubernetes</strong><br><span style="color: #8A94A3;">one commodity node per zone, no GPU</span></span>
+          <span class="tech" style="color: #12161F;"><strong style="font-family: 'IBM Plex Sans'; font-size: 13px;">Graph sharded by zone</strong><br><span style="color: #8A94A3;">national re-forecast inside the 30 s budget</span></span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; padding: 7px 0;"><svg width="16" height="17" viewBox="0 0 16 17"><path d="M8 0 L8 12 M3 8 L8 13 L13 8" stroke="#C3C9D4" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+      <!-- L6 clients -->
+      <div style="display: flex; gap: 14px; align-items: stretch;">
+        <div style="width: 108px; display: flex; align-items: center;"><span class="lbl" style="color: #0F766E;">CLIENTS</span></div>
+        <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+          <div style="border: 1.5px solid #0F766E; border-radius: 3px; background: #F3F8F7; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">Passenger app</span><span class="tech">React &middot; MapLibre GL</span></div>
+          <div style="border: 1.5px solid #0F766E; border-radius: 3px; background: #F3F8F7; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">Station displays</span><span class="tech">window + platform</span></div>
+          <div style="border: 1.5px solid #0F766E; border-radius: 3px; background: #F3F8F7; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">SMS / IVR 139</span><span class="tech">regional languages</span></div>
+          <div style="border: 1.5px solid #0F766E; border-radius: 3px; background: #F3F8F7; padding: 10px 12px;"><span style="font-size: 13px; font-weight: 600; display: block;">Control console</span><span class="tech">costed precedence</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- right rail: the loop that keeps it honest -->
+    <div style="border: 1.5px dashed #B45309; border-radius: 3px; background: #FDFAF5; padding: 16px 16px; display: flex; flex-direction: column; gap: 14px;">
+      <span class="lbl" style="color: #B45309;">CALIBRATION LOOP</span>
+      <span style="font-size: 12.5px; color: #5B6472; line-height: 1.5;">There is no public archive of past Indian Railways arrivals. History is accumulated by polling, then used to fit the parts of the model that cannot be measured from published data.</span>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="border: 1px solid #E8D9C4; background: #FFFFFF; border-radius: 3px; padding: 9px 11px;"><span style="font-size: 12.5px; font-weight: 600; display: block;">collect</span><span class="tech" style="font-size: 11px;">poll the live feed on a cron</span></div>
+        <div style="display: flex; justify-content: center;"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0 L7 10 M3 7 L7 11 L11 7" stroke="#B45309" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="border: 1px solid #E8D9C4; background: #FFFFFF; border-radius: 3px; padding: 9px 11px;"><span style="font-size: 12.5px; font-weight: 600; display: block;">validate</span><span class="tech" style="font-size: 11px;">observed vs simulated, station by station</span></div>
+        <div style="display: flex; justify-content: center;"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0 L7 10 M3 7 L7 11 L11 7" stroke="#B45309" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="border: 1px solid #E8D9C4; background: #FFFFFF; border-radius: 3px; padding: 9px 11px;"><span style="font-size: 12.5px; font-weight: 600; display: block;">calibrate</span><span class="tech" style="font-size: 11px;">fit delay parameters to the real distribution</span></div>
+        <div style="display: flex; justify-content: center;"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0 L7 10 M3 7 L7 11 L11 7" stroke="#B45309" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="border: 1px solid #B45309; background: #FDF6EC; border-radius: 3px; padding: 9px 11px;"><span style="font-size: 12.5px; font-weight: 600; display: block;">SimConfig</span><span class="tech" style="font-size: 11px;">carries its own evidence count and residuals</span></div>
+      </div>
+
+      <span style="font-size: 11.5px; color: #8A94A3; line-height: 1.5; margin-top: auto;">The config records what it was fitted against, so any result can be read with the strength of its evidence attached.</span>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
