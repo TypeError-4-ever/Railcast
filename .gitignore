@@ -19,3 +19,6 @@ data/live/
 
 
 outputs/pptx/
+
+# deck files are built by hand and live outside the repo
+*.pptx
