@@ -3,6 +3,11 @@
 Problem Statement **SIH26028** · Dynamic Forecast of Expected Time of Arrival (ETA)
 for Coaching Trains · Ministry of Railways.
 
+Team **TypeError-4-ever**. The submission deck is
+[`deck/RAILCAST_SIH26028_IDEA.pptx`](deck/RAILCAST_SIH26028_IDEA.pptx); every
+number on its impact slide is reproduced by `python run_prototype.py` and
+written to `outputs/RESULTS.md`.
+
 This is a runnable implementation of the forecast loop the deck describes, on a
 simulated New Delhi – Mumbai Central corridor. It produces the numbers, tables
 and charts that go into the deck.
@@ -37,8 +42,10 @@ The five stages in the deck's technical slide, each implemented:
 | D | Calibrated window | `models.MondrianConformal` — conformalised quantile regression, calibrated per horizon bucket × zone × time of day |
 | — | Decision surfaces | `railcast/analysis.py` — connection risk, costed precedence, serving cost |
 
-The corridor is 35 stations and 1386 km, split into ~170 block sections, with
-32 trains in five priority classes running both directions. The simulator
+On the default `--source real` the corridor is the working New Delhi - Mumbai
+Central route: 202 stations, 1384 km, 44 trains, split into block sections from
+the real km posts. (`--source synthetic` builds a 35-station stand-in instead,
+for running with no network at all.) The simulator
 generates delay from causes the forecaster cannot see directly: run-time
 friction correlated along a journey, winter fog on NR/NCR, monsoon rain on WR,
 temporary speed restrictions, incidents, block-occupancy headway, and trains

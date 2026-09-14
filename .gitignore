@@ -20,5 +20,6 @@ data/live/
 
 outputs/pptx/
 
-# deck files are built by hand and live outside the repo
+# decks are built by hand and live outside the repo - except the submission
 *.pptx
+!deck/*.pptx
