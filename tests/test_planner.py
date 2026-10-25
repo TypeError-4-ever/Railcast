@@ -138,6 +138,35 @@ def test_quantile_cdf_hits_the_median():
     assert quantile_cdf([0.0], [10.0], [30.0], [10.0])[0] == pytest.approx(0.5)
 
 
+class FakeSeats:
+    """T1 is waitlisted; everything else has seats."""
+    name, available = "fake", True
+
+    def check(self, train, frm, to, day, klass, quota="GN"):
+        text = "GNWL40/WL30" if train == "T1" else "AVAILABLE-0010"
+        status, n = parse_availability(text)
+        return SeatStatus(status, n, text, 300.0, quota, self.name, 0.0)
+
+
+def test_waitlisted_direct_train_drops_below_the_connection(net):
+    resp = plan(net, "AAA", "BBB", date(2026, 10, 27), klass="SL", delays="prior",
+                seat_provider=FakeSeats(), now=datetime(2026, 10, 26, 9, 0))
+    by_route = {tuple(l.train for l in o.legs): o for o in resp.options}
+    assert by_route[("T1",)].group == "Risky"                # WL30
+    safest = resp.options[resp.picks["Safest"]]
+    assert [l.train for l in safest.legs][0] == "T2"         # the connection
+    assert safest.fare == 600.0
+
+
+def test_unchecked_options_are_kept_apart(net, monkeypatch):
+    monkeypatch.setattr(config, "SEAT_CHECKS", 1)
+    resp = plan(net, "AAA", "BBB", date(2026, 10, 27), klass="SL", delays="prior",
+                seat_provider=FakeSeats(), now=datetime(2026, 10, 26, 9, 0))
+    assert resp.groups["Unchecked"]
+    for oid in resp.picks.values():
+        assert resp.options[oid].seats_checked
+
+
 def test_plan_end_to_end(net):
     resp = plan(net, "AAA", "BBB", date(2026, 10, 27), klass="SL", max_changes=1,
                 delays="prior", seat_provider=NoSeats(), now=datetime(2026, 10, 26, 9, 0))

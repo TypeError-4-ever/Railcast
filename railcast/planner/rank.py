@@ -12,6 +12,7 @@ from .. import config
 from .risk import Scored
 
 GROUPS = ("Safe", "Likely", "Risky")
+UNCHECKED = "Unchecked"
 
 
 def group(p: float) -> str:
@@ -29,14 +30,16 @@ def _sort_key(s: Scored):
 
 def prune(scored: list[Scored]) -> list[Scored]:
     """Drop an option another beats or ties on every count: chance of reaching
-    B, predicted arrival, departure (later is better), changes and fare."""
+    B, predicted arrival, departure (later is better), changes and fare. An
+    option whose seats were checked is only compared with others that were."""
     def fare(s):
         return s.fare if s.fare is not None else float("inf")
 
     ordered = sorted(scored, key=lambda s: (-s.p_reach, s.arrival[1]))
     kept: list[Scored] = []
     for s in ordered:
-        if not any(k.p_reach >= s.p_reach and k.arrival[1] <= s.arrival[1]
+        if not any(k.seats_checked == s.seats_checked
+                   and k.p_reach >= s.p_reach and k.arrival[1] <= s.arrival[1]
                    and k.it.dep >= s.it.dep and k.it.changes <= s.it.changes
                    and fare(k) <= fare(s) for k in kept):
             kept.append(s)
@@ -44,9 +47,14 @@ def prune(scored: list[Scored]) -> list[Scored]:
 
 
 def grouped(scored: list[Scored]) -> dict[str, list[Scored]]:
+    """Safe / Likely / Risky. When seats were checked for some options, the rest
+    go to Unchecked: their chance leaves out seats, so it is not comparable."""
+    checked = any(s.seats_checked for s in scored)
     out = {g: [] for g in GROUPS}
+    if checked:
+        out[UNCHECKED] = []
     for s in scored:
-        out[group(s.p_reach)].append(s)
+        out[UNCHECKED if checked and not s.seats_checked else group(s.p_reach)].append(s)
     for g in out:
         out[g].sort(key=_sort_key)
     return out
@@ -55,6 +63,7 @@ def grouped(scored: list[Scored]) -> dict[str, list[Scored]]:
 def picks(scored: list[Scored]) -> dict[str, Scored]:
     """Safest, Fastest (among options at least Likely, if any), Cheapest
     (only when fares are known)."""
+    scored = [s for s in scored if s.seats_checked] or scored
     if not scored:
         return {}
     # to the percent: at equal chance, fewer changes is the safer trip

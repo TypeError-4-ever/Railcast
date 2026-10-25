@@ -125,11 +125,12 @@ class Response:
                 shown.append(oid)
         for oid in shown:
             lines += _detail(by_id[oid]) + [""]
-        for g in rank.GROUPS:
-            ids = self.groups.get(g, [])
+        for g, ids in self.groups.items():
             if not ids:
                 continue
-            lines.append(f"{g.upper()} ({len(ids)})")
+            note = (" - seats not checked, % is connections only"
+                    if g == rank.UNCHECKED else "")
+            lines.append(f"{g.upper()} ({len(ids)}){note}")
             for oid in ids[:per_group]:
                 lines.append("  " + _one_line(by_id[oid]))
             if len(ids) > per_group:
@@ -225,8 +226,8 @@ def plan(net: Network, origin: str, dest: str, day0: date, after: str = "00:00",
     base = datetime.combine(day0, time())
     fastest = min((s.it.duration for s in kept), default=0.0)
     options, ids = [], {}
-    for g in rank.GROUPS:
-        for s in groups[g]:
+    for g, members in groups.items():
+        for s in members:
             ids[id(s)] = len(options)
             options.append(_option(net, s, len(options), g, base, fastest, day0,
                                    klass, now))
@@ -256,7 +257,7 @@ def plan(net: Network, origin: str, dest: str, day0: date, after: str = "00:00",
                if provider.available else "not checked"),
         caveats=caveats,
         picks={label: ids[id(s)] for label, s in picks.items()},
-        groups={g: [ids[id(s)] for s in groups[g]] for g in rank.GROUPS},
+        groups={g: [ids[id(s)] for s in members] for g, members in groups.items()},
         options=options,
         found=len(its),
     )
@@ -270,7 +271,8 @@ def _check_seats(net, scored, day0, klass, provider, now) -> None:
     if not provider.available or not klass:
         return
     seen: dict[tuple, object] = {}
-    top = sorted(scored, key=lambda s: (-s.p_connections, s.arrival[1]))[:config.SEAT_CHECKS]
+    top = sorted(scored, key=lambda s: (-round(s.p_connections, 2), s.it.changes,
+                                        s.arrival[1]))[:config.SEAT_CHECKS]
     for s in top:
         fares = []
         for k, leg in enumerate(s.it.legs):

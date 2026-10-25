@@ -78,7 +78,11 @@ def main(argv=None) -> None:
     if a.cmd == "plan":
         _plan(a)
     elif a.cmd == "train-delays":
-        train_delays.run(a)
+        try:
+            train_delays.run(a)
+        except RuntimeError as exc:
+            print(f"cannot train: {exc}", file=sys.stderr)
+            raise SystemExit(2)
     elif a.cmd == "evaluate":
         pipeline.run(a)
 

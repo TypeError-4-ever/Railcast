@@ -22,13 +22,12 @@ from .network import Network
 from .respond import OUT, Response
 from .search import Leg
 
-COLORS = {"Safe": "#4CAF7D", "Likely": "#F2A03D", "Risky": "#E2574C"}
+COLORS = {"Safe": "#4CAF7D", "Likely": "#F2A03D", "Risky": "#E2574C", "Unchecked": "#8A94A6"}
 
 
 def render(net: Network, resp: Response, top: int = 12) -> str:
     t = THEME
-    opts = [o for g in ("Safe", "Likely", "Risky") for o in
-            (resp.options[i] for i in resp.groups.get(g, []))][:top]
+    opts = [resp.options[i] for ids in resp.groups.values() for i in ids][:top]
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(13, 5.6),
                                   gridspec_kw={"width_ratios": [1.15, 1]})
     if not opts:
