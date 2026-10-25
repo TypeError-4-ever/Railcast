@@ -36,6 +36,11 @@ ALIASES = {
     "CSMT": "CSTM", "KSR": "SBC", "AYC": "FD",
 }
 CURRENT = {old: new for new, old in ALIASES.items()}
+CURRENT_NAMES = {
+    "ALD": "Prayagraj Jn", "MGS": "Pt. Deen Dayal Upadhyaya Jn",
+    "JHS": "Virangana Lakshmibai Jhansi", "HBJ": "Rani Kamlapati",
+    "CSTM": "Mumbai CSMT", "SBC": "KSR Bengaluru City", "FD": "Ayodhya Cantt",
+}
 
 
 def current_code(code: str) -> str:
@@ -178,6 +183,8 @@ class Network:
         return min(hi, max(lo, t))
 
     def name(self, code: str) -> str:
+        if code in CURRENT_NAMES:
+            return CURRENT_NAMES[code]
         s = self.stations.get(code)
         return s.name.title() if s else code
 

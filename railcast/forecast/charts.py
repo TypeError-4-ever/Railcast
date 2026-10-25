@@ -51,7 +51,7 @@ def _style():
     return t
 
 
-def _finish(fig, ax, t, title, subtitle=None):
+def _finish(fig, ax, t, title, subtitle=None, foot=None):
     axes = ax if isinstance(ax, (list, np.ndarray)) else [ax]
     for a in np.ravel(axes):
         a.set_axisbelow(True)
@@ -66,7 +66,8 @@ def _finish(fig, ax, t, title, subtitle=None):
         wrapped = textwrap.fill(subtitle, width=int(fig.get_figwidth() * 10.2))
         fig.text(0.012, 0.915, wrapped, ha="left", va="top", fontsize=10.5,
                  color=t["mute"], linespacing=1.35)
-    fig.text(0.012, 0.018, FOOT, ha="left", fontsize=8, color=t["mute"])
+    fig.text(0.012, 0.018, FOOT if foot is None else foot, ha="left", fontsize=8,
+             color=t["mute"])
     nl = wrapped.count(chr(10)) + 1 if subtitle else 0
     fig.tight_layout(rect=(0, 0.035, 1, 0.945 - 0.040 * nl))
 
