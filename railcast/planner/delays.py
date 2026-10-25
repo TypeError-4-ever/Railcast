@@ -7,11 +7,15 @@ Planning a trip across India a day ahead needs something cruder that covers
 every train: delay at a station given how far into its run the station is, the
 class of train, the zone, the time of day and the season.
 
-    PriorDelays     a stated rule, not fitted to anything. Used until a model
-                    has been trained.
-    LearnedDelays   LightGBM quantile regression on running records - simulated
-                    today, real once the collector has gathered them
-                    (`python -m railcast train-delays --source live`).
+    PriorDelays     a stated rule, not fitted to anything. What the planner
+                    uses until a model has been trained on real running data.
+    LearnedDelays   LightGBM quantile regression on running records.
+                    `train-delays --source live` trains on what the collector
+                    gathered and becomes the planner's default.
+                    `train-delays --source sim` trains on simulated runs of one
+                    corridor. It exercises the training path, but the simulator's
+                    hand-set rules decide how each class of train behaves, so the
+                    planner only uses it when asked (`plan --delays sim`).
 
 Progress into the run is measured in scheduled hours, not km: the simulator,
 the live feed and the timetable each measure km differently, but a booked time
@@ -27,10 +31,10 @@ import pandas as pd
 
 from ..forecast.trains import CLASSES
 
-MODEL_PATH = Path("models/delays.pkl")
+MODEL_PATHS = {"live": Path("models/delays.pkl"), "sim": Path("models/delays_sim.pkl")}
 
-FEATURES = ["klass", "hours_into_run", "zone", "hour", "month", "dow", "halt", "event"]
-CATEGORICAL = ["klass", "zone", "month", "dow"]
+FEATURES = ["klass", "hours_into_run", "zone", "night", "month", "dow", "event"]
+CATEGORICAL = ["klass", "zone"]
 QUANTILES = {"q10": 0.10, "q50": 0.50, "q90": 0.90}
 
 KLASS_ID = {k: i for i, k in enumerate(CLASSES)}
@@ -42,6 +46,13 @@ FOG_ZONES = {"NR", "NCR", "NER", "NWR", "ECR", "NFR", "ER"}
 
 def encode(klass: str, zone: str) -> tuple[int, int]:
     return KLASS_ID.get(klass, KLASS_ID["EXPRESS"]), ZONE_ID.get(zone, -1)
+
+
+def night(minutes: float) -> int:
+    """22:00-07:00, when winter fog slows trains. Coarser than the hour on
+    purpose: with few trains, the exact hour identifies the train."""
+    h = int(minutes // 60) % 24
+    return int(h >= 22 or h < 7)
 
 
 # --------------------------------------------------------------------------- #
@@ -81,20 +92,31 @@ class LearnedDelays:
 
     def predict(self, df: pd.DataFrame):
         X = df[FEATURES].copy()
+        # trees extrapolate badly past the longest run they saw: hold it there
+        X["hours_into_run"] = X["hours_into_run"].clip(
+            upper=self.meta.get("max_hours", np.inf))
         for c in CATEGORICAL:
             X[c] = X[c].astype("category")
         q10, q50, q90 = (self.models[k].predict(X) for k in ("q10", "q50", "q90"))
-        q50 = np.maximum(q50, -10.0)
-        return np.minimum(q10, q50), q50, np.maximum(q90, q50)
+        q50 = np.maximum(q50, -10.0)                 # trains are rarely early
+        q10 = np.clip(q10, -15.0, q50)
+        return q10, q50, np.maximum(q90, q50)
 
 
-def load(path: Path = MODEL_PATH):
-    """The trained model if there is one, else the stated prior."""
+def load(which: str = "auto"):
+    """auto: the model trained on real data if there is one, else the prior.
+    sim / live: that trained model. prior: the stated rule."""
+    if which == "prior":
+        return PriorDelays()
+    path = MODEL_PATHS["live" if which == "auto" else which]
     if path.exists():
         with open(path, "rb") as fh:
             blob = pickle.load(fh)
         return LearnedDelays(blob["models"], blob["meta"])
-    return PriorDelays()
+    if which == "auto":
+        return PriorDelays()
+    raise FileNotFoundError(f"{path} missing - run `python -m railcast train-delays "
+                            f"--source {which}` first")
 
 
 # --------------------------------------------------------------------------- #
@@ -114,12 +136,13 @@ def fit(rows: pd.DataFrame, source: str, holdout: float = 0.2) -> tuple[LearnedD
 
     models = {}
     for name, alpha in QUANTILES.items():
-        m = lgb.LGBMRegressor(objective="quantile", alpha=alpha, n_estimators=400,
-                              learning_rate=0.05, num_leaves=63, min_child_samples=40,
+        m = lgb.LGBMRegressor(objective="quantile", alpha=alpha, n_estimators=300,
+                              learning_rate=0.05, num_leaves=15, min_child_samples=400,
                               subsample=0.9, subsample_freq=1, verbose=-1)
         m.fit(frame(tr), tr["delay"], categorical_feature=CATEGORICAL)
         models[name] = m
-    model = LearnedDelays(models, {"source": source, "rows": int(len(rows))})
+    model = LearnedDelays(models, {"source": source, "rows": int(len(rows)),
+                                   "max_hours": float(tr["hours_into_run"].max())})
 
     metrics = {"rows_train": int(len(tr)), "rows_test": int(len(te))}
     if len(te):
@@ -136,7 +159,9 @@ def fit(rows: pd.DataFrame, source: str, holdout: float = 0.2) -> tuple[LearnedD
     return model, metrics
 
 
-def save(model: LearnedDelays, path: Path = MODEL_PATH) -> None:
+def save(model: LearnedDelays) -> Path:
+    path = MODEL_PATHS[model.meta["source"]]
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as fh:
         pickle.dump({"models": model.models, "meta": model.meta}, fh)
+    return path

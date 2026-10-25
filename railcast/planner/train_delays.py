@@ -6,8 +6,9 @@ Train the planner's delay model.
 
 Both sources become the same rows - one per train, run date, station and event -
 and go through one training path, so switching to real data later changes
-nothing but the flag. The model is saved to models/delays.pkl and the planner
-picks it up from there.
+nothing but the flag. A model trained on real data is saved to
+models/delays.pkl and the planner uses it from then on; the simulated one goes
+to models/delays_sim.pkl and is used only with `plan --delays sim`.
 """
 from __future__ import annotations
 
@@ -22,14 +23,14 @@ from . import delays
 MIN_LIVE_ROWS = 2000
 
 
-def _row(run_day, klass, zone, sched, origin_dep, month, dow, halt, event, delay):
+def _row(run_day, klass, zone, sched, origin_dep, month, dow, event, delay):
     k, z = delays.encode(klass, zone)
-    return (run_day, k, (sched - origin_dep) / 60.0, z, int(sched // 60) % 24,
-            month, dow, int(halt), event, float(delay))
+    return (run_day, k, (sched - origin_dep) / 60.0, z, delays.night(sched),
+            month, dow, event, float(delay))
 
 
-COLUMNS = ["run_day", "klass", "hours_into_run", "zone", "hour", "month", "dow",
-           "halt", "event", "delay"]
+COLUMNS = ["run_day", "klass", "hours_into_run", "zone", "night", "month", "dow",
+           "event", "delay"]
 
 
 def records_from_sim(days: int, start_date: str, reference: str,
@@ -51,10 +52,10 @@ def records_from_sim(days: int, start_date: str, reference: str,
                 zone = world.cor.stations[s].zone
                 if s != t.origin and s in run.arr and s in t.sched_arr:
                     rows.append(_row(d, t.klass, zone, t.sched_arr[s], t.dep_minute,
-                                     month, dow, True, 0, run.arr[s] - t.sched_arr[s]))
+                                     month, dow, 0, run.arr[s] - t.sched_arr[s]))
                 if s != t.dest and s in run.dep and s in t.sched_dep:
                     rows.append(_row(d, t.klass, zone, t.sched_dep[s], t.dep_minute,
-                                     month, dow, True, 1, run.dep[s] - t.sched_dep[s]))
+                                     month, dow, 1, run.dep[s] - t.sched_dep[s]))
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
@@ -76,8 +77,8 @@ def records_from_live(store, net) -> pd.DataFrame:
             day = d0 + timedelta(days=int(r.scheduled // 1440))
             delay = r.delay_min if r.delay_min is not None else r.actual - r.scheduled
             rows.append(_row(d0.toordinal(), klass, zone, r.scheduled, origin_dep,
-                             day.month, day.weekday(), r.is_halt,
-                             int(r.event == "departure"), delay))
+                             day.month, day.weekday(), int(r.event == "departure"),
+                             delay))
     df = pd.DataFrame(rows, columns=COLUMNS)
     if len(df) < MIN_LIVE_ROWS:
         raise RuntimeError(
@@ -89,7 +90,7 @@ def records_from_live(store, net) -> pd.DataFrame:
 
 def add_arguments(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--source", choices=("sim", "live"), default="sim")
-    ap.add_argument("--days", type=int, default=240, help="simulated days (sim only)")
+    ap.add_argument("--days", type=int, default=365, help="simulated days (sim only)")
     ap.add_argument("--start-date", default="2024-01-01")
     ap.add_argument("--reference", default="12951")
     ap.add_argument("--max-trains", type=int, default=48)
@@ -104,8 +105,11 @@ def run(args) -> dict:
         rows = records_from_live(LiveStore(), Network.load())
     print(f"{len(rows):,} station events from {rows['run_day'].nunique()} run days")
     model, metrics = delays.fit(rows, args.source)
-    delays.save(model)
-    print(f"saved {delays.MODEL_PATH} - {model.label}")
+    path = delays.save(model)
+    print(f"saved {path} - {model.label}")
+    if args.source == "sim":
+        print("  the planner keeps using the prior rule until a model is trained on "
+              "real data; try this one with `plan --delays sim`")
     if "mae_q50_min" in metrics:
         print(f"  held-out latest days: median-delay error {metrics['mae_q50_min']:.1f} min "
               f"(prior rule {metrics['prior_mae_q50_min']:.1f} min), "

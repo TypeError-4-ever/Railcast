@@ -35,6 +35,12 @@ ALIASES = {
     "PRYJ": "ALD", "DDU": "MGS", "VGLJ": "JHS", "RKMP": "HBJ",
     "CSMT": "CSTM", "KSR": "SBC", "AYC": "FD",
 }
+CURRENT = {old: new for new, old in ALIASES.items()}
+
+
+def current_code(code: str) -> str:
+    """The code Indian Railways uses today - what booking and seat APIs expect."""
+    return CURRENT.get(code, code)
 
 # Stations in one city a passenger can change between by road or metro.
 CITY_GROUPS = {
