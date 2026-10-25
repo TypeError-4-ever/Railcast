@@ -7,8 +7,9 @@ Planning a trip across India a day ahead needs something cruder that covers
 every train: delay at a station given how far into its run the station is, the
 class of train, the zone, the time of day and the season.
 
-    PriorDelays     a stated rule, not fitted to anything. What the planner
-                    uses until a model has been trained on real running data.
+    PriorDelays     a stated rule, scaled to the 241 arrivals observed so far.
+                    What the planner uses until a model has been trained on
+                    real running data.
     LearnedDelays   LightGBM quantile regression on running records.
                     `train-delays --source live` trains on what the collector
                     gathered and becomes the planner's default.
@@ -58,12 +59,18 @@ def night(minutes: float) -> int:
 # --------------------------------------------------------------------------- #
 class PriorDelays:
     """Delay grows with time into the run, by class; fog doubles it in winter
-    on the northern zones. Numbers chosen to look like Indian Railways, not
-    fitted to its data."""
+    on the northern zones.
 
-    label = "prior rule, not fitted to any data"
-    PER_HOUR = {"RAJDHANI": 1.5, "DURONTO": 1.5, "SHATABDI": 1.2,
-                "SUPERFAST": 2.5, "EXPRESS": 3.5, "PASSENGER": 4.0}
+    Scaled so its overall spread matches the first 241 arrivals the collector
+    observed on the Delhi - Mumbai corridor (median about 15 min, P90 about
+    57 min, 47% within 15 min - see README). Not fitted per train, zone or
+    season: a stated rule with a real anchor, until there is enough running
+    data to train LearnedDelays on.
+    """
+
+    label = "prior rule scaled to 241 observed arrivals, not fitted per train"
+    PER_HOUR = {"RAJDHANI": 0.8, "DURONTO": 0.8, "SHATABDI": 0.7,
+                "SUPERFAST": 1.3, "EXPRESS": 1.6, "PASSENGER": 2.0}
 
     def predict(self, df: pd.DataFrame):
         inv = {v: k for k, v in KLASS_ID.items()}
@@ -74,8 +81,8 @@ class PriorDelays:
                         for z, m in zip(df["zone"], df["month"])])
         h = np.maximum(df["hours_into_run"].to_numpy(dtype=float), 0.0)
         q50 = rate * h * fog + 2.0 * df["event"].to_numpy()
-        q10 = np.maximum(-5.0, 0.15 * q50 - 5.0)
-        q90 = 2.8 * q50 + 15.0
+        q10 = np.maximum(-5.0, 0.2 * q50 - 3.0)
+        q90 = 2.5 * q50 + 15.0
         return q10, q50, q90
 
 

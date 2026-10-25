@@ -57,7 +57,9 @@ def picks(scored: list[Scored]) -> dict[str, Scored]:
     (only when fares are known)."""
     if not scored:
         return {}
-    out = {"Safest": max(scored, key=lambda s: (s.p_reach, -s.arrival[1]))}
+    # to the percent: at equal chance, fewer changes is the safer trip
+    out = {"Safest": max(scored, key=lambda s: (round(s.p_reach, 2), -s.it.changes,
+                                                -s.arrival[1]))}
     good = [s for s in scored if s.p_reach >= config.LIKELY] or scored
     out["Fastest"] = min(good, key=lambda s: (s.arrival[1], -s.p_reach))
     priced = [s for s in good if s.fare is not None]
