@@ -24,3 +24,9 @@ outputs/pptx/
 *.pptx
 !deck/*.pptx
 !deck/*.pdf
+
+# Trained models and planner output are rebuilt locally
+models/
+outputs/plans/
+data/availability/
+.pytest_cache/

@@ -58,7 +58,7 @@ def main() -> None:
     if a.cmd == "status":
         from .base import RAW
         from .live import LiveStore
-        from ..simconfig import SimConfig
+        from ..forecast.simconfig import SimConfig
         print("static files:")
         for f in ("stations.json", "trains.json", "schedules.json"):
             p_ = RAW / f
@@ -103,8 +103,8 @@ def main() -> None:
         return
 
     if a.cmd == "validate":
-        from .. import validate as val
-        from ..simconfig import SimConfig
+        from ..forecast import validate as val
+        from ..forecast.simconfig import SimConfig
         from .corridor import build_corridor, build_roster
         from .datameet import DatameetFeed
         from .live import LiveStore
@@ -120,7 +120,7 @@ def main() -> None:
         return
 
     if a.cmd == "calibrate":
-        from .. import calibrate as cal
+        from ..forecast import calibrate as cal
         from .corridor import build_corridor, build_roster
         from .datameet import DatameetFeed
         from .openmeteo import build_environments
