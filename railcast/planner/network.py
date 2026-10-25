@@ -28,7 +28,7 @@ from ..feeds.base import RAW, haversine_km
 from ..feeds.datameet import TYPE_TO_CLASS, DatameetFeed
 
 CACHE = RAW.parent / "cache" / "network.pkl"
-CACHE_VERSION = 1
+CACHE_VERSION = 2
 
 # current code -> code in the datameet snapshot
 ALIASES = {
@@ -71,6 +71,7 @@ class TrainInfo:
     name: str
     type: str
     klass: str           # priority class the delay models understand
+    zone: str            # the operating zone that owns the train
     classes: frozenset   # coach classes, empty when the data does not say
     reserved: bool
 
@@ -116,7 +117,7 @@ class Network:
             props = raw.get(num, {})
             trains[num] = TrainInfo(
                 number=num, name=rec.name, type=rec.type,
-                klass=TYPE_TO_CLASS.get(rec.type, "EXPRESS"),
+                klass=TYPE_TO_CLASS.get(rec.type, "EXPRESS"), zone=rec.zone,
                 classes=frozenset(c for k, c in CLASS_FLAGS.items() if props.get(k)),
                 reserved=rec.type not in config.UNRESERVED_TYPES)
             calls[num] = seq
