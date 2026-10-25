@@ -136,7 +136,7 @@ def build_environments(cor, static_feed, start_date: str, n_days: int, rng,
     """
     from datetime import date, timedelta
 
-    from ..simulator import DayEnvironment
+    from ..forecast.simulator import DayEnvironment
 
     weather = weather or OpenMeteoFeed()
     d0 = date.fromisoformat(start_date)

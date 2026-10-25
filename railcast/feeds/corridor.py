@@ -21,8 +21,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..corridor import Block, Corridor, Station, zone_id
-from ..trains import CLASSES, Train
+from ..forecast.corridor import Block, Corridor, Station, zone_id
+from ..forecast.trains import CLASSES, Train
 from .base import StaticFeed, haversine_km
 from .datameet import TYPE_TO_CLASS
 
