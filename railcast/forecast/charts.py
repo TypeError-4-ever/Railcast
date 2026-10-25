@@ -165,10 +165,16 @@ def c02_connection_risk(ctx):
 # 03 - one forecast, every remaining station
 # --------------------------------------------------------------------------- #
 def _hero_rows(ctx):
-    """One re-forecast, taken part-way through the tracked journey."""
+    """One re-forecast of the tracked journey: the first made while the train
+    is running late with most of its run still ahead."""
     tr = ctx["track"]
     nows = sorted(tr["now"].unique())
     now = nows[max(1, int(len(nows) * 0.35))]
+    for n in nows:
+        snap = tr[tr["now"] == n]
+        if snap["cur_delay"].iloc[0] >= 20 and len(snap) >= 8:
+            now = n
+            break
     r = tr[(tr["now"] == now) & (tr["hops"] >= 1)].sort_values("hops")
     return r, int(r["day"].iloc[0]), float(now)
 
@@ -179,8 +185,7 @@ def c03_journey_forecast(ctx):
     r, day, now = _hero_rows(ctx)
     tid = r["train"].iloc[0]
     name = ctx["world"].sim.trains[tid].name
-    cor = ctx["world"].cor
-    km = np.array([cor.stations[j].km for j in r["to_idx"]])
+    km = r["dist_remaining_km"].to_numpy()       # along the direction of travel
     base = r["sched_arr"].to_numpy()
     fig, ax = plt.subplots(figsize=(12, 5.8))
     ax.fill_between(km, r["lo_arr"] - base, r["hi_arr"] - base, color=ACCENT,
@@ -193,11 +198,11 @@ def c03_journey_forecast(ctx):
     ax.axhline(0, color=t["mute"], lw=0.9, ls=":")
     for _, row in r.iterrows():
         if row["hops"] % 3 == 1:
-            ax.annotate(row["to_code"], (cor.stations[row["to_idx"]].km,
+            ax.annotate(row["to_code"], (row["dist_remaining_km"],
                                          row["act_arr"] - row["sched_arr"]),
                         textcoords="offset points", xytext=(0, 9), ha="center",
                         fontsize=8, color=t["mute"])
-    ax.set_xlabel(f"Kilometres from {cor.code(0)}")
+    ax.set_xlabel(f"Kilometres ahead of the train (forecast made at {r['from_code'].iloc[0]})")
     ax.set_ylabel("Minutes late against the timetable")
     ax.grid(lw=0.6)
     ax.legend(frameon=False, ncol=4, loc="upper left", fontsize=10)

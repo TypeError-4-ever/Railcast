@@ -221,7 +221,10 @@ def run(args) -> dict:
 
     if not args.no_charts:
         from . import charts
-        card = scored[scored["hops"] >= 3].sort_values("cur_delay").iloc[-1]
+        # a typical late train with most of its run still ahead - not the worst case
+        late = scored[(scored["hops"] >= 3) & scored["cur_delay"].between(20, 60)]
+        pool = late if len(late) else scored[scored["hops"] >= 3]
+        card = pool.sort_values("dist_remaining_km").iloc[-1]
         track = an.journey_track(world, model, conf, fr_table,
                                  int(card["day"]), str(card["train"]))
         n = charts.render_all(dict(world=world, tables=tables, summary=summary,
